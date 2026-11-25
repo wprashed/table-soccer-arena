@@ -1,5 +1,6 @@
 /** Typed fetch wrapper. Token lives in (safe) storage; every call is authenticated. */
 import { storage } from './safeStorage';
+import { handleMockApi } from './mockBackend';
 
 const TOKEN_KEY = 'tsa.token';
 
@@ -29,6 +30,14 @@ export class ApiError extends Error {
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const token = getToken();
   const serverUrl = (typeof window !== 'undefined' && localStorage.getItem('server_url')) || (import.meta as any).env?.VITE_SERVER_URL || '';
+  const isGitHubPages = typeof window !== 'undefined' && window.location.hostname.endsWith('github.io');
+
+  // If on GitHub Pages and no custom server is specified, use client-side mock backend directly
+  if (!serverUrl && isGitHubPages) {
+    const body = typeof opts.body === 'string' ? JSON.parse(opts.body) : opts.body;
+    return (await handleMockApi(path, opts.method || 'GET', body, token)) as T;
+  }
+
   const apiBase = serverUrl ? serverUrl.replace(/\/$/, '') : '';
   let res: Response;
   try {
@@ -41,8 +50,20 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
       },
     });
   } catch (err) {
+    // If network fails and no serverUrl is configured, try mock backend
+    if (!serverUrl) {
+      const body = typeof opts.body === 'string' ? JSON.parse(opts.body) : opts.body;
+      return (await handleMockApi(path, opts.method || 'GET', body, token)) as T;
+    }
     throw networkError(err);
   }
+
+  // GitHub Pages static web servers return 405 Not Allowed for POST / PUT / PATCH
+  if (res.status === 405 || (!serverUrl && res.status === 404)) {
+    const body = typeof opts.body === 'string' ? JSON.parse(opts.body) : opts.body;
+    return (await handleMockApi(path, opts.method || 'GET', body, token)) as T;
+  }
+
   const text = await res.text();
   let data: any = null;
   try {
@@ -50,7 +71,13 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   } catch {
     data = { error: text };
   }
-  if (!res.ok) throw new ApiError(data?.error ?? `Request failed (${res.status})`, res.status);
+  if (!res.ok) {
+    let errMsg = data?.error;
+    if (typeof errMsg === 'string' && errMsg.includes('<html')) {
+      errMsg = `Server error (${res.status} ${res.statusText || 'Endpoint unavailable'})`;
+    }
+    throw new ApiError(errMsg ?? `Request failed (${res.status})`, res.status);
+  }
   return data as T;
 }
 

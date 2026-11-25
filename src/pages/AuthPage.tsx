@@ -59,7 +59,11 @@ export function AuthPage() {
         setMode('login');
       }
     } catch (err: any) {
-      setError(err?.message ?? 'Something went wrong');
+      let msg = err?.message ?? 'Something went wrong';
+      if (typeof msg === 'string' && (msg.includes('<html') || msg.includes('405'))) {
+        msg = 'Could not reach server. Ready to create your account in offline/browser mode!';
+      }
+      setError(msg);
       sfx.click();
     } finally {
       setBusy(false);

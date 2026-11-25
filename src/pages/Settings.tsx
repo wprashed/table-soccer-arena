@@ -27,6 +27,9 @@ export function Settings() {
   const [bindings, setBindings] = useState(loadBindings());
   const [listening, setListening] = useState<Action | null>(null);
   const [pw, setPw] = useState({ current: '', next: '' });
+  const [customServer, setCustomServer] = useState(
+    typeof window !== 'undefined' ? localStorage.getItem('server_url') || '' : ''
+  );
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<'profile' | 'controls' | 'audio' | 'account'>('profile');
 
@@ -283,6 +286,55 @@ export function Settings() {
             <button className="btn btn-flame w-full py-2.5" onClick={() => logout()}>
               Sign out
             </button>
+          </div>
+
+          <div className="glass space-y-3 rounded-2xl p-4">
+            <h2 className="text-sm font-black uppercase tracking-widest text-slate-300">Multiplayer Server</h2>
+            <p className="text-xs text-slate-400">
+              By default on GitHub Pages, the game runs directly in your browser with real-time physics and AI matchmaking.
+              Enter a custom server URL to join live cross-device 4-player lobbies.
+            </p>
+            <div className="flex items-center gap-2">
+              <span className={`inline-block h-2.5 w-2.5 rounded-full ${customServer ? 'bg-emerald-400 animate-pulse' : 'bg-blue-400'}`} />
+              <span className="text-xs font-bold text-slate-300">
+                {customServer ? `Custom: ${customServer}` : 'Standalone Browser Mode (Zero latency / Offline ready)'}
+              </span>
+            </div>
+            <input
+              className="input text-xs"
+              type="text"
+              placeholder="e.g. https://table-soccer-api.up.railway.app"
+              value={customServer}
+              onChange={(e) => setCustomServer(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <button
+                className="btn btn-secondary flex-1 py-2 text-xs"
+                onClick={() => {
+                  localStorage.removeItem('server_url');
+                  setCustomServer('');
+                  toast('Reverted to Browser / Standalone mode', 'info');
+                  setTimeout(() => window.location.reload(), 500);
+                }}
+              >
+                Reset Default
+              </button>
+              <button
+                className="btn btn-primary flex-1 py-2 text-xs"
+                onClick={() => {
+                  if (customServer.trim()) {
+                    localStorage.setItem('server_url', customServer.trim());
+                    toast('Server URL saved — reconnecting…', 'success');
+                  } else {
+                    localStorage.removeItem('server_url');
+                    toast('Reverted to Standalone mode', 'info');
+                  }
+                  setTimeout(() => window.location.reload(), 500);
+                }}
+              >
+                Save & Connect
+              </button>
+            </div>
           </div>
         </div>
       )}

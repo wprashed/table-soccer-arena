@@ -5,7 +5,6 @@
  * repository functions below are the only place SQL lives, so swapping the
  * driver for `pg` later is a contained change.
  */
-import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -13,7 +12,43 @@ const dataDir = process.env.DATA_DIR || path.join(process.cwd(), 'data');
 fs.mkdirSync(dataDir, { recursive: true });
 export const DB_PATH = process.env.DB_PATH || path.join(dataDir, 'arena.db');
 
-export const db = new Database(DB_PATH);
+let rawDb: any;
+try {
+  const Database = (await import('better-sqlite3')).default;
+  rawDb = new Database(DB_PATH);
+} catch {
+  const { DatabaseSync } = await import('node:sqlite');
+  const syncDb = new DatabaseSync(DB_PATH);
+  rawDb = {
+    prepare: (sql: string) => {
+      const stmt = syncDb.prepare(sql);
+      return {
+        run: (...args: any[]) => stmt.run(...args),
+        get: (...args: any[]) => stmt.get(...args),
+        all: (...args: any[]) => stmt.all(...args),
+      };
+    },
+    exec: (sql: string) => syncDb.exec(sql),
+    pragma: (sql: string) => {
+      try { syncDb.exec(`PRAGMA ${sql};`); } catch {}
+    },
+    transaction: (fn: any) => {
+      return (...args: any[]) => {
+        syncDb.exec('BEGIN');
+        try {
+          const res = fn(...args);
+          syncDb.exec('COMMIT');
+          return res;
+        } catch (e) {
+          syncDb.exec('ROLLBACK');
+          throw e;
+        }
+      };
+    },
+  };
+}
+
+export const db = rawDb;
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
