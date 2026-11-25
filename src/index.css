@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink-950: #05080f;
+  --color-ink-900: #070b14;
+  --color-ink-850: #0a101c;
+  --color-ink-800: #0d1524;
+  --color-ink-700: #142032;
+  --color-ink-600: #1c2b41;
+  --color-turf-500: #17b978;
+  --color-turf-600: #0f9c63;
+  --color-turf-700: #0b7a4e;
+  --color-flame-500: #ff6b35;
+  --color-flame-600: #e8501c;
+  --font-display: "Rajdhani", system-ui, sans-serif;
+}
+
+:root { color-scheme: dark; }
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(1100px 620px at 12% -10%, rgba(23,185,120,0.20), transparent 60%),
+    radial-gradient(900px 540px at 92% 8%, rgba(99,102,241,0.20), transparent 62%),
+    radial-gradient(700px 500px at 50% 110%, rgba(255,107,53,0.10), transparent 60%),
+    #05080f;
+  color: #e8eefc;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+/* ---------------------------------------------------------------- mobile --- */
+/* Phones: real touch targets (44px minimum), no accidental text selection
+   while swiping, and no rubber-band scroll fighting the table. */
+@media (max-width: 640px) {
+  .btn { min-height: 42px; }
+  .btn.h-8, .btn.h-9 { min-height: 38px; }
+  .input { font-size: 16px; } /* stops iOS zooming on focus */
+  button, a { touch-action: manipulation; }
+}
+
+/* Notch / home-indicator aware page frame.
+ *
+ * These use padding-inline *plus* whatever horizontal padding the element
+ * already sets, instead of overwriting it. Declared as `padding-left` this rule
+ * has the same specificity as Tailwind's `px-3` but comes later in the file, so
+ * it silently wiped out the page gutters on every screen. */
+.page-safe {
+  padding-inline: calc(0.75rem + env(safe-area-inset-left)) calc(0.75rem + env(safe-area-inset-right));
+}
+@media (min-width: 640px) {
+  .page-safe {
+    padding-inline: calc(1.25rem + env(safe-area-inset-left)) calc(1.25rem + env(safe-area-inset-right));
+  }
+}
+
+/* Momentum scrolling for the long lists */
+.scroll-thin { -webkit-overflow-scrolling: touch; }
+
+/* Landscape phones: give the table the whole viewport and hide chrome that
+   steals height (the HUD stays, the labels go). */
+@media (max-height: 500px) and (orientation: landscape) {
+  .match-footer-hide { display: none; }
+}
+
+/* Respect users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.glass {
+  background: linear-gradient(160deg, rgba(20,32,50,0.86), rgba(10,16,28,0.78));
+  border: 1px solid rgba(120,160,220,0.14);
+  backdrop-filter: blur(14px);
+}
+.glass-soft {
+  background: linear-gradient(160deg, rgba(20,32,50,0.55), rgba(10,16,28,0.45));
+  border: 1px solid rgba(120,160,220,0.10);
+}
+.card-hover { transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.card-hover:hover { transform: translateY(-2px); border-color: rgba(23,185,120,0.45); box-shadow: 0 18px 40px -20px rgba(23,185,120,0.55); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; font-weight: 700;
+  border-radius: .85rem; transition: transform .12s ease, filter .15s ease, background .15s ease;
+  cursor: pointer; user-select: none; white-space: nowrap; }
+.btn:active { transform: scale(.975); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-primary { background: linear-gradient(135deg, #17b978, #0b9d63); color: #02110b;
+  box-shadow: 0 10px 30px -12px rgba(23,185,120,0.9), inset 0 1px 0 rgba(255,255,255,0.25); }
+.btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-flame { background: linear-gradient(135deg, #ff8a4c, #e8501c); color: #1a0800;
+  box-shadow: 0 10px 30px -12px rgba(255,107,53,0.85), inset 0 1px 0 rgba(255,255,255,0.25); }
+.btn-ghost { background: rgba(120,160,220,0.10); color: #dbe6fb; border: 1px solid rgba(120,160,220,0.18); }
+.btn-ghost:hover:not(:disabled) { background: rgba(120,160,220,0.18); }
+
+.input {
+  width: 100%; background: rgba(6,10,18,0.75); border: 1px solid rgba(120,160,220,0.20);
+  border-radius: .8rem; padding: .7rem .9rem; color: #e8eefc; outline: none; font-size: .95rem;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.input:focus { border-color: rgba(23,185,120,0.7); box-shadow: 0 0 0 3px rgba(23,185,120,0.16); }
+.input::placeholder { color: #5b6b85; }
+
+.chip { display:inline-flex; align-items:center; gap:.35rem; padding:.2rem .6rem; border-radius:999px;
+  font-size:.72rem; font-weight:700; letter-spacing:.02em; }
+
+.scroll-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+.scroll-thin::-webkit-scrollbar-thumb { background: rgba(120,160,220,0.22); border-radius: 8px; }
+.scroll-thin::-webkit-scrollbar-track { background: transparent; }
+
+@keyframes floatUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: none; } }
+.animate-in { animation: floatUp .35s ease both; }
+@keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(23,185,120,0.55); } 70% { box-shadow: 0 0 0 16px rgba(23,185,120,0); } 100% { box-shadow: 0 0 0 0 rgba(23,185,120,0); } }
+.pulse-ring { animation: pulseRing 1.8s infinite; }
+@keyframes spinSlow { to { transform: rotate(360deg); } }
+.spin-slow { animation: spinSlow 2.4s linear infinite; }
+@keyframes shake { 10%,90% {transform:translateX(-1px)} 20%,80%{transform:translateX(2px)} 30%,50%,70%{transform:translateX(-4px)} 40%,60%{transform:translateX(4px)} }
+.shake { animation: shake .5s; }
+
+.no-select { user-select: none; -webkit-user-select: none; }
