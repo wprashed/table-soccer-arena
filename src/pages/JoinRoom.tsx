@@ -6,11 +6,11 @@ import { Spinner } from '../components/ui';
 import { useApp } from '../lib/store';
 
 export function JoinRoom({ code }: { code: string }) {
-  const { toast, profile } = useApp();
+  const { toast, user } = useApp();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!profile) return;
+    if (!user) return;
     let cancelled = false;
     const tryJoin = async () => {
       for (let attempt = 0; attempt < 6; attempt++) {

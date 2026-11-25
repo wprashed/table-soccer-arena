@@ -88,19 +88,38 @@ function saveProfiles(profiles: Record<string, ProfileResponse>) {
 }
 
 export function getMockSessionUser(token?: string | null): PublicUser | null {
-  if (!token) {
-    const stored = localStorage.getItem(SESSION_KEY);
-    if (!stored) return null;
+  const users = getUsers();
+  let sessionUserId: string | null = null;
+  const stored = typeof window !== 'undefined' ? localStorage.getItem(SESSION_KEY) : null;
+
+  if (stored) {
     try {
-      token = JSON.parse(stored)?.token;
+      const parsed = JSON.parse(stored);
+      if (parsed?.userId) sessionUserId = parsed.userId;
+      if (!token && parsed?.token) token = parsed.token;
     } catch {
-      token = stored;
+      if (!token) token = stored;
     }
   }
-  if (!token) return null;
-  const userId = token.replace(/^mock_token_/, '').split('_')[0];
-  const users = getUsers();
-  return users.find((u) => u.id === userId) || null;
+
+  // 1. Direct match by session userId
+  if (sessionUserId) {
+    const found = users.find((u) => u.id === sessionUserId);
+    if (found) return found;
+  }
+
+  // 2. Match by token content
+  if (token) {
+    const found = users.find((u) => token.includes(u.id) || u.id === token);
+    if (found) return found;
+
+    const stripped = token.replace(/^mock_token_/, '');
+    const found2 = users.find((u) => stripped.startsWith(u.id));
+    if (found2) return found2;
+  }
+
+  // 3. Fallback: return the first user if any exists (e.g. demo player)
+  return users[0] || null;
 }
 
 export function createDefaultProfile(user: PublicUser): ProfileResponse {

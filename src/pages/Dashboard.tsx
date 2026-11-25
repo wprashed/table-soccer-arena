@@ -21,8 +21,42 @@ export function Dashboard() {
     api.get<LeaderboardEntry[]>('/leaderboard?scope=global').then((l) => setLeaders(l.slice(0, 3))).catch(() => {});
   }, []);
 
-  if (!profile || !user) return null;
-  const { stats, daily, challenges, matchHistory, achievements } = profile;
+  useEffect(() => {
+    if (!profile) refresh();
+  }, [profile, refresh]);
+
+  if (!user) return null;
+
+  const activeProfile = profile || {
+    user,
+    profile: {
+      bio: 'Ready to climb the arena rankings!',
+      frame: 'frame-default',
+      tableSkin: 'skin-emerald',
+      ballSkin: 'ball-gold',
+      uniform: 'kit-away',
+      celebration: 'celebration-confetti',
+      dailyStreak: 1,
+      lastDailyClaim: null,
+    },
+    stats: {
+      matches: 0,
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+      winRate: 0,
+      streak: 0,
+      bestStreak: 0,
+      highestRating: user.rating || 1000,
+    },
+    achievements: [],
+    daily: { canClaim: true, streak: 1, rewards: [40, 55, 70, 85, 100, 130, 200] },
+    challenges: [],
+    matchHistory: [],
+  };
+  const { stats, daily, challenges, matchHistory, achievements } = activeProfile;
   const tier = tierFor(user.rating);
   const progress = tierProgress(user.rating);
   const nextTier = tier.max === Infinity ? null : tierFor(tier.max + 1);
