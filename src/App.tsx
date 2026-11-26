@@ -242,15 +242,17 @@ function TopBar() {
         <Link to="/store" className="chip bg-amber-400/15 text-amber-300">
           🪙 {user.coins}
         </Link>
-        {(user.role === 'admin' || user.email?.toLowerCase() === 'rashedcse18@gmail.com') && (
-          <Link
-            to="/admin"
-            className="chip border border-rose-500/40 bg-rose-500/20 text-rose-300 font-bold hover:bg-rose-500/30 transition text-xs"
-            title="Admin Dashboard"
-          >
-            🛡️ Admin
-          </Link>
-        )}
+        <Link
+          to="/admin"
+          className={`chip border text-xs font-bold transition ${
+            user.role === 'admin' || user.email?.toLowerCase() === 'rashedcse18@gmail.com'
+              ? 'border-rose-500/40 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30'
+              : 'border-white/10 bg-white/5 text-slate-400 hover:text-white'
+          }`}
+          title="Admin Dashboard"
+        >
+          🛡️ Admin
+        </Link>
         <button onClick={() => sfx.click()} className="hidden sm:block" title="Your rank">
           <TierPill rating={user.rating} />
         </button>

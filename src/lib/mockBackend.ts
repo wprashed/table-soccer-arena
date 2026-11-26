@@ -809,6 +809,27 @@ export async function handleMockApi(path: string, method: string, body?: any, to
     return { ok: true };
   }
 
+  // 24. ADMIN CLAIM / ELEVATE PRIVILEGES
+  if (normPath === '/admin/claim' && method === 'POST') {
+    if (!currentUser) throw new Error('Unauthorized');
+    currentUser.role = 'admin';
+    const users = getUsers();
+    const idx = users.findIndex((u) => u.id === currentUser.id);
+    if (idx >= 0) {
+      users[idx].role = 'admin';
+      users[idx].coins = Math.max(users[idx].coins || 0, 5000);
+      saveUsers(users);
+    }
+    const profiles = getProfiles();
+    if (profiles[currentUser.id]) {
+      profiles[currentUser.id].user.role = 'admin';
+      profiles[currentUser.id].user.coins = Math.max(profiles[currentUser.id].user.coins || 0, 5000);
+      saveProfiles(profiles);
+    }
+    logAudit(currentUser.username, 'admin.claim_access', currentUser.username, { role: 'admin' });
+    return { ok: true, user: currentUser };
+  }
+
   // Default fallback
   return { ok: true };
 }

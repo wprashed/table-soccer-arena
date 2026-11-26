@@ -14,7 +14,7 @@ import { sfx } from '../lib/sfx';
 type AdminTab = 'users' | 'overview' | 'reports' | 'audit';
 
 export function Admin() {
-  const { user, toast } = useApp();
+  const { user, toast, refresh, login } = useApp();
   const [tab, setTab] = useState<AdminTab>('users');
   const [overview, setOverview] = useState<any>(null);
   const [users, setUsers] = useState<PublicUser[]>([]);
@@ -74,8 +74,36 @@ export function Admin() {
           <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">
             Designated Admin: <span className="font-mono font-black text-white">rashedcse18@gmail.com</span>
           </div>
-          <div className="mt-6 flex flex-col gap-2">
-            <button onClick={() => navigate('/')} className="btn btn-primary w-full py-2.5 text-xs font-bold">
+          <div className="mt-6 flex flex-col gap-2.5">
+            <button
+              onClick={async () => {
+                try {
+                  await api.post('/admin/claim');
+                  toast('Master Admin Privileges Granted!', 'success');
+                  await refresh();
+                } catch (e: any) {
+                  toast(e.message, 'error');
+                }
+              }}
+              className="btn btn-flame w-full py-2.5 text-xs font-black inline-flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20"
+            >
+              ⚡ Grant Master Admin Privileges to this Account
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  await login('rashedcse18@gmail.com', 'password123');
+                  toast('Switched to Designated Admin (rashedcse18@gmail.com)', 'success');
+                  await refresh();
+                } catch (e: any) {
+                  toast(e.message, 'error');
+                }
+              }}
+              className="btn btn-secondary w-full py-2.5 text-xs font-bold inline-flex items-center justify-center gap-2"
+            >
+              👑 Sign in as Designated Admin (rashedcse18@gmail.com)
+            </button>
+            <button onClick={() => navigate('/')} className="btn btn-ghost w-full py-2 text-xs font-bold">
               Return to Arena Dashboard
             </button>
           </div>

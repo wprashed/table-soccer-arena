@@ -278,6 +278,29 @@ export function AuthPage() {
               <button className="btn btn-primary w-full py-3" disabled={busy}>
                 {busy ? <Spinner /> : mode === 'login' ? 'Sign in' : mode === 'register' ? 'Create account' : mode === 'forgot' ? 'Send reset link' : 'Set new password'}
               </button>
+
+              {mode === 'login' && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setEmail('rashedcse18@gmail.com');
+                    setPassword('password123');
+                    setBusy(true);
+                    try {
+                      await login('rashedcse18@gmail.com', 'password123');
+                      toast('Signed in as Master Admin (rashedcse18@gmail.com)', 'success');
+                      navigate('/admin');
+                    } catch (e: any) {
+                      toast(e.message, 'error');
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                  className="btn btn-secondary w-full py-2.5 text-xs font-black inline-flex items-center justify-center gap-2 border border-rose-500/30 text-rose-300 hover:bg-rose-500/10"
+                >
+                  🛡️ One-Click Master Admin Sign In
+                </button>
+              )}
             </form>
 
             <div className="mt-3 flex justify-between text-[11px]">
