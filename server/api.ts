@@ -350,11 +350,49 @@ export function buildApi(sockets: {
       users: (db.prepare(`SELECT COUNT(*) c FROM users`).get() as any).c,
       matches: (db.prepare(`SELECT COUNT(*) c FROM matches`).get() as any).c,
       liveMatches: (db.prepare(`SELECT COUNT(*) c FROM matches WHERE status='waiting'`).get() as any).c,
+      bannedUsers: (db.prepare(`SELECT COUNT(*) c FROM users WHERE banned=1`).get() as any).c,
       reports: db.prepare(`SELECT r.*, u.username AS target FROM reports r JOIN users u ON u.id=r.target_id WHERE status='open'`).all(),
       suspicious: db.prepare(`SELECT * FROM audit_log WHERE action LIKE 'anticheat%' ORDER BY id DESC LIMIT 20`).all(),
       audit: db.prepare(`SELECT * FROM audit_log ORDER BY id DESC LIMIT 40`).all(),
       economy: db.prepare(`SELECT SUM(coins) coins FROM player_profiles`).get(),
     });
+  }));
+
+  api.get('/admin/users', requireAuth, requireAdmin, wrap(async (_req, res) => {
+    const rows = db.prepare(`
+      SELECT u.id, u.email, u.username, u.avatar, u.country, u.role, u.banned, u.ban_reason, u.created_at,
+             pr.rating, pr.highest_rating, pp.level, pp.coins, pp.xp
+      FROM users u
+      LEFT JOIN player_ratings pr ON pr.user_id = u.id
+      LEFT JOIN player_profiles pp ON pp.user_id = u.id
+      ORDER BY u.created_at DESC
+    `).all() as any[];
+
+    const users = rows.map((r) => {
+      const rating = r.rating ?? START_RATING;
+      const isAdmin =
+        r.role === 'admin' ||
+        r.email?.toLowerCase() === 'rashedcse18@gmail.com' ||
+        r.email?.toLowerCase() === 'admin@arena.dev';
+      return {
+        id: r.id,
+        email: r.email,
+        username: r.username,
+        avatar: r.avatar,
+        country: r.country,
+        rating,
+        tier: tierFor(rating).tier,
+        level: r.level ?? 1,
+        xp: r.xp ?? 0,
+        coins: r.coins ?? 0,
+        role: isAdmin ? 'admin' : 'player',
+        banned: !!r.banned,
+        banReason: r.ban_reason,
+        createdAt: r.created_at,
+      };
+    });
+
+    res.json({ users });
   }));
 
   api.post('/admin/ban', requireAuth, requireAdmin, wrap(async (req, res) => {
@@ -368,6 +406,55 @@ export function buildApi(sockets: {
       now()
     );
     if (ban) db.prepare(`DELETE FROM sessions WHERE user_id=?`).run(userId);
+    res.json({ ok: true });
+  }));
+
+  api.post('/admin/user/role', requireAuth, requireAdmin, wrap(async (req, res) => {
+    const { userId, role } = req.body ?? {};
+    if (!['admin', 'player'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
+    db.prepare(`UPDATE users SET role=? WHERE id=?`).run(role, userId);
+    db.prepare(`INSERT INTO audit_log (actor, action, target, meta, created_at) VALUES (?,?,?,?,?)`).run(
+      req.user!.id,
+      'admin.set_role',
+      userId,
+      JSON.stringify({ role }),
+      now()
+    );
+    res.json({ ok: true });
+  }));
+
+  api.post('/admin/user/adjust', requireAuth, requireAdmin, wrap(async (req, res) => {
+    const { userId, deltaCoins, deltaRating } = req.body ?? {};
+    if (typeof deltaCoins === 'number' && deltaCoins !== 0) {
+      db.prepare(`UPDATE player_profiles SET coins = MAX(0, coins + ?) WHERE user_id = ?`).run(deltaCoins, userId);
+    }
+    if (typeof deltaRating === 'number' && deltaRating !== 0) {
+      db.prepare(`UPDATE player_ratings SET rating = MAX(100, rating + ?) WHERE user_id = ?`).run(deltaRating, userId);
+    }
+    db.prepare(`INSERT INTO audit_log (actor, action, target, meta, created_at) VALUES (?,?,?,?,?)`).run(
+      req.user!.id,
+      'admin.adjust_user',
+      userId,
+      JSON.stringify({ deltaCoins, deltaRating }),
+      now()
+    );
+    res.json({ ok: true });
+  }));
+
+  api.post('/admin/user/delete', requireAuth, requireAdmin, wrap(async (req, res) => {
+    const { userId } = req.body ?? {};
+    if (!userId || userId === req.user!.id) return res.status(400).json({ error: 'Cannot delete current account' });
+    db.prepare(`DELETE FROM sessions WHERE user_id=?`).run(userId);
+    db.prepare(`DELETE FROM player_profiles WHERE user_id=?`).run(userId);
+    db.prepare(`DELETE FROM player_ratings WHERE user_id=?`).run(userId);
+    db.prepare(`DELETE FROM users WHERE id=?`).run(userId);
+    db.prepare(`INSERT INTO audit_log (actor, action, target, meta, created_at) VALUES (?,?,?,?,?)`).run(
+      req.user!.id,
+      'admin.delete_user',
+      userId,
+      JSON.stringify({}),
+      now()
+    );
     res.json({ ok: true });
   }));
 

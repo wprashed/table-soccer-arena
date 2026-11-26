@@ -16,6 +16,11 @@ export interface PublicUser {
   frame?: string;
   position?: PlayerPosition;
   online?: boolean;
+  role?: 'player' | 'admin';
+  email?: string;
+  banned?: boolean;
+  banReason?: string;
+  createdAt?: string;
 }
 
 export interface ProfileStats {

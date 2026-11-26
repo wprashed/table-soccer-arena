@@ -28,40 +28,151 @@ const USERS_KEY = 'tsa.mock.users.v1';
 const PROFILES_KEY = 'tsa.mock.profiles.v1';
 const SESSION_KEY = 'tsa.mock.session.v1';
 const TOURNAMENTS_KEY = 'tsa.mock.tournaments.v1';
+const REPORTS_KEY = 'tsa.mock.reports.v1';
+const AUDIT_KEY = 'tsa.mock.audit.v1';
 
-// Seed demo users if storage is fresh
+// Seed demo users and admin user
 function initStorage() {
   if (typeof window === 'undefined') return;
-  if (!localStorage.getItem(USERS_KEY)) {
-    const demoUsers: PublicUser[] = [
-      {
-        id: 'usr_alex',
-        username: 'AlexStriker',
-        avatar: '⚽',
-        country: 'BD',
-        rating: 1120,
-        tier: 'Silver',
-        level: 4,
-        xp: 950,
-        coins: 480,
-      },
-      {
-        id: 'usr_sam',
-        username: 'SamRocket',
-        avatar: '🚀',
-        country: 'US',
-        rating: 1280,
-        tier: 'Gold',
-        level: 6,
-        xp: 1600,
-        coins: 750,
-      },
-    ];
-    localStorage.setItem(USERS_KEY, JSON.stringify(demoUsers));
+  const raw = localStorage.getItem(USERS_KEY);
+  let users: any[] = [];
+  try {
+    users = raw ? JSON.parse(raw) : [];
+  } catch {
+    users = [];
   }
+
+  // Ensure rashedcse18@gmail.com exists and is admin
+  const rashed = users.find((u) => u.email?.toLowerCase() === 'rashedcse18@gmail.com');
+  if (!rashed) {
+    users.unshift({
+      id: 'usr_rashed',
+      username: 'RashedAdmin',
+      avatar: '👑',
+      country: 'BD',
+      rating: 1650,
+      tier: 'Diamond',
+      level: 12,
+      xp: 6200,
+      coins: 5000,
+      role: 'admin',
+      email: 'rashedcse18@gmail.com',
+      password: 'password123',
+      createdAt: '2026-11-20T08:00:00Z',
+    });
+  } else {
+    rashed.role = 'admin';
+  }
+
+  // Ensure demo players exist
+  if (!users.some((u) => u.id === 'usr_alex')) {
+    users.push({
+      id: 'usr_alex',
+      username: 'AlexStriker',
+      avatar: '⚽',
+      country: 'BD',
+      rating: 1120,
+      tier: 'Silver',
+      level: 4,
+      xp: 950,
+      coins: 480,
+      role: 'player',
+      email: 'alex@arena.dev',
+      password: 'demo1234',
+      createdAt: '2026-11-21T09:00:00Z',
+    });
+  }
+  if (!users.some((u) => u.id === 'usr_sam')) {
+    users.push({
+      id: 'usr_sam',
+      username: 'SamRocket',
+      avatar: '🚀',
+      country: 'US',
+      rating: 1280,
+      tier: 'Gold',
+      level: 6,
+      xp: 1600,
+      coins: 750,
+      role: 'player',
+      email: 'sam@arena.dev',
+      password: 'demo1234',
+      createdAt: '2026-11-22T10:00:00Z',
+    });
+  }
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
 initStorage();
+
+function getReports(): any[] {
+  try {
+    const raw = localStorage.getItem(REPORTS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [
+    {
+      id: 1,
+      target_id: 'usr_sam',
+      target: 'SamRocket',
+      reason: 'excessive_spinning',
+      details: 'Spun the 5-bar continuously during 2v2 match.',
+      status: 'open',
+      created_at: new Date(Date.now() - 3600000).toISOString(),
+    },
+    {
+      id: 2,
+      target_id: 'usr_alex',
+      target: 'AlexStriker',
+      reason: 'inappropriate_name',
+      details: 'Requested username review.',
+      status: 'open',
+      created_at: new Date(Date.now() - 7200000).toISOString(),
+    },
+  ];
+}
+
+function saveReports(reports: any[]) {
+  localStorage.setItem(REPORTS_KEY, JSON.stringify(reports));
+}
+
+function getAudit(): any[] {
+  try {
+    const raw = localStorage.getItem(AUDIT_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return [
+    {
+      id: 1,
+      actor: 'system',
+      action: 'system.boot',
+      target: 'arena',
+      meta: '{}',
+      created_at: new Date(Date.now() - 14400000).toISOString(),
+    },
+    {
+      id: 2,
+      actor: 'rashed_admin',
+      action: 'admin.grant_role',
+      target: 'rashedcse18@gmail.com',
+      meta: '{"role":"admin"}',
+      created_at: new Date(Date.now() - 7200000).toISOString(),
+    },
+  ];
+}
+
+function logAudit(actor: string, action: string, target: string, meta: any = {}) {
+  const audit = getAudit();
+  audit.unshift({
+    id: Date.now(),
+    actor,
+    action,
+    target,
+    meta: typeof meta === 'string' ? meta : JSON.stringify(meta),
+    created_at: new Date().toISOString(),
+  });
+  if (audit.length > 100) audit.pop();
+  localStorage.setItem(AUDIT_KEY, JSON.stringify(audit));
+}
 
 function getUsers(): (PublicUser & { email?: string; password?: string })[] {
   try {
@@ -102,24 +213,32 @@ export function getMockSessionUser(token?: string | null): PublicUser | null {
     }
   }
 
+  const checkAdmin = (u: any) => {
+    if (!u) return u;
+    if (u.email?.toLowerCase() === 'rashedcse18@gmail.com' || u.email?.toLowerCase() === 'admin@arena.dev') {
+      u.role = 'admin';
+    }
+    return u;
+  };
+
   // 1. Direct match by session userId
   if (sessionUserId) {
     const found = users.find((u) => u.id === sessionUserId);
-    if (found) return found;
+    if (found) return checkAdmin(found);
   }
 
   // 2. Match by token content
   if (token) {
     const found = users.find((u) => token.includes(u.id) || u.id === token);
-    if (found) return found;
+    if (found) return checkAdmin(found);
 
     const stripped = token.replace(/^mock_token_/, '');
     const found2 = users.find((u) => stripped.startsWith(u.id));
-    if (found2) return found2;
+    if (found2) return checkAdmin(found2);
   }
 
   // 3. Fallback: return the first user if any exists (e.g. demo player)
-  return users[0] || null;
+  return checkAdmin(users[0]) || null;
 }
 
 export function createDefaultProfile(user: PublicUser): ProfileResponse {
@@ -186,18 +305,23 @@ export async function handleMockApi(path: string, method: string, body?: any, to
 
     const id = 'usr_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     const tier = tierFor(START_RATING).tier;
+    const isAdmin =
+      email.toLowerCase() === 'rashedcse18@gmail.com' ||
+      email.toLowerCase() === 'admin@arena.dev';
     const newUser: PublicUser & { email: string; password: string } = {
       id,
       email: email.toLowerCase(),
       username: username.trim(),
       password,
-      avatar: avatar || '⚽',
+      avatar: avatar || (isAdmin ? '👑' : '⚽'),
       country: (country || 'BD').toUpperCase().slice(0, 2),
       rating: START_RATING,
       tier,
       level: 1,
       xp: 0,
-      coins: 200,
+      coins: isAdmin ? 5000 : 200,
+      role: isAdmin ? 'admin' : 'player',
+      createdAt: new Date().toISOString(),
     };
 
     users.push(newUser);
@@ -224,7 +348,35 @@ export async function handleMockApi(path: string, method: string, body?: any, to
     const users = getUsers();
     const user = users.find((u) => u.email?.toLowerCase() === email?.toLowerCase());
     
-    // Support demo logins out of the box
+    // Support admin & demo logins out of the box
+    if (!user && (email?.toLowerCase() === 'rashedcse18@gmail.com' || email === 'admin@arena.dev')) {
+      const demoId = 'usr_rashed';
+      const demoUsername = 'RashedAdmin';
+      const demoUser = {
+        id: demoId,
+        email: email.toLowerCase(),
+        username: demoUsername,
+        password: password || 'password123',
+        avatar: '👑',
+        country: 'BD',
+        rating: 1650,
+        tier: 'Diamond',
+        level: 12,
+        xp: 6200,
+        coins: 5000,
+        role: 'admin' as const,
+        createdAt: new Date().toISOString(),
+      };
+      users.push(demoUser);
+      saveUsers(users);
+      const profiles = getProfiles();
+      profiles[demoId] = createDefaultProfile(demoUser);
+      saveProfiles(profiles);
+      const newToken = `mock_token_${demoId}_${Date.now()}`;
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ token: newToken, userId: demoId }));
+      return { token: newToken, user: demoUser };
+    }
+
     if (!user && (email === 'alex@arena.dev' || email === 'sam@arena.dev')) {
       const demoId = email === 'alex@arena.dev' ? 'usr_alex' : 'usr_sam';
       const demoUsername = email === 'alex@arena.dev' ? 'AlexStriker' : 'SamRocket';
@@ -242,6 +394,8 @@ export async function handleMockApi(path: string, method: string, body?: any, to
         level: 4,
         xp: 800,
         coins: 500,
+        role: 'player' as const,
+        createdAt: new Date().toISOString(),
       };
       users.push(demoUser);
       saveUsers(users);
@@ -255,6 +409,11 @@ export async function handleMockApi(path: string, method: string, body?: any, to
 
     if (!user || (user.password && user.password !== password)) {
       throw new Error('Invalid email or password');
+    }
+
+    if (user.email?.toLowerCase() === 'rashedcse18@gmail.com' || user.email?.toLowerCase() === 'admin@arena.dev') {
+      user.role = 'admin';
+      saveUsers(users);
     }
 
     const newToken = `mock_token_${user.id}_${Date.now()}`;
@@ -513,6 +672,124 @@ export async function handleMockApi(path: string, method: string, body?: any, to
       outgoing: [],
       recent: [],
     };
+  }
+
+  // 17. ADMIN OVERVIEW
+  if (normPath === '/admin/overview') {
+    const users = getUsers();
+    const reports = getReports().filter((r) => r.status === 'open');
+    const audit = getAudit();
+    const profiles = getProfiles();
+    const totalCoins = Object.values(profiles).reduce((acc, p) => acc + (p.user.coins || 0), 0);
+    const totalMatches = Object.values(profiles).reduce((acc, p) => acc + (p.stats.matches || 0), 0);
+
+    return {
+      users: users.length,
+      bannedUsers: users.filter((u) => u.banned).length,
+      matches: totalMatches || 14,
+      liveMatches: 1,
+      reports,
+      audit,
+      economy: { coins: totalCoins || 7200 },
+    };
+  }
+
+  // 18. ADMIN USERS LIST
+  if (normPath === '/admin/users') {
+    const users = getUsers().map((u) => {
+      const isAdmin =
+        u.role === 'admin' ||
+        u.email?.toLowerCase() === 'rashedcse18@gmail.com' ||
+        u.email?.toLowerCase() === 'admin@arena.dev';
+      return {
+        ...u,
+        role: isAdmin ? ('admin' as const) : (u.role || 'player'),
+        banned: !!u.banned,
+        createdAt: u.createdAt || '2026-11-20T10:00:00Z',
+      };
+    });
+    return { users };
+  }
+
+  // 19. ADMIN BAN/UNBAN
+  if (normPath === '/admin/ban' && method === 'POST') {
+    const { userId, ban, reason } = body || {};
+    const users = getUsers();
+    const target = users.find((u) => u.id === userId);
+    if (target) {
+      target.banned = !!ban;
+      target.banReason = ban ? reason || 'Policy violation' : undefined;
+      saveUsers(users);
+      logAudit(currentUser?.username || 'admin', ban ? 'admin.ban' : 'admin.unban', target.username, { reason });
+    }
+    return { ok: true };
+  }
+
+  // 20. ADMIN SET ROLE
+  if (normPath === '/admin/user/role' && method === 'POST') {
+    const { userId, role } = body || {};
+    const users = getUsers();
+    const target = users.find((u) => u.id === userId);
+    if (target) {
+      target.role = role;
+      saveUsers(users);
+      logAudit(currentUser?.username || 'admin', 'admin.set_role', target.username, { role });
+    }
+    return { ok: true };
+  }
+
+  // 21. ADMIN ADJUST USER (COINS / RATING)
+  if (normPath === '/admin/user/adjust' && method === 'POST') {
+    const { userId, deltaCoins, deltaRating } = body || {};
+    const users = getUsers();
+    const target = users.find((u) => u.id === userId);
+    if (target) {
+      if (typeof deltaCoins === 'number') {
+        target.coins = Math.max(0, (target.coins || 0) + deltaCoins);
+      }
+      if (typeof deltaRating === 'number') {
+        target.rating = Math.max(100, (target.rating || 1000) + deltaRating);
+        target.tier = tierFor(target.rating).tier;
+      }
+      saveUsers(users);
+      const profiles = getProfiles();
+      if (profiles[userId]) {
+        profiles[userId].user = target;
+        saveProfiles(profiles);
+      }
+      logAudit(currentUser?.username || 'admin', 'admin.adjust_user', target.username, { deltaCoins, deltaRating });
+    }
+    return { ok: true };
+  }
+
+  // 22. ADMIN DELETE USER
+  if (normPath === '/admin/user/delete' && method === 'POST') {
+    const { userId } = body || {};
+    let users = getUsers();
+    const target = users.find((u) => u.id === userId);
+    if (target) {
+      users = users.filter((u) => u.id !== userId);
+      saveUsers(users);
+      const profiles = getProfiles();
+      delete profiles[userId];
+      saveProfiles(profiles);
+      logAudit(currentUser?.username || 'admin', 'admin.delete_user', target.username);
+    }
+    return { ok: true };
+  }
+
+  // 23. ADMIN RESOLVE REPORT
+  if (normPath.startsWith('/admin/reports/') && normPath.endsWith('/resolve') && method === 'POST') {
+    const parts = normPath.split('/');
+    const reportId = Number(parts[parts.length - 2]);
+    const reports = getReports();
+    const rep = reports.find((r) => r.id === reportId);
+    if (rep) {
+      rep.status = body?.status === 'dismiss' ? 'dismissed' : 'resolved';
+      saveReports(reports);
+      logAudit(currentUser?.username || 'admin', 'admin.resolve_report', `report_${reportId}`);
+    }
+    return { ok: true };
   }
 
   // Default fallback

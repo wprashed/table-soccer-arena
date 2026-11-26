@@ -313,6 +313,20 @@ export function Settings() {
               {busy ? <Spinner size={16} /> : 'Update password'}
             </button>
           </div>
+          {(user?.role === 'admin' || user?.email?.toLowerCase() === 'rashedcse18@gmail.com') && (
+            <div className="glass space-y-2 rounded-2xl p-4 border border-rose-500/30 bg-rose-500/10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-black uppercase tracking-widest text-rose-300">Admin Console</h2>
+                  <div className="text-xs text-slate-300">You have master administrator privileges.</div>
+                </div>
+                <Link to="/admin" className="btn btn-flame px-3 py-1.5 text-xs font-black">
+                  Open Dashboard →
+                </Link>
+              </div>
+            </div>
+          )}
+
           <div className="glass space-y-2 rounded-2xl p-4">
             <h2 className="text-sm font-black uppercase tracking-widest text-slate-300">Account</h2>
             <div className="text-xs text-slate-400">

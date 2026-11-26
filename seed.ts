@@ -22,6 +22,7 @@ const PLAYERS = [
   { email: 'omar@arena.dev', username: 'omar_opener', avatar: '🎯', country: 'BD', role: 'player' },
   { email: 'zoe@arena.dev', username: 'zoe_zeta', avatar: '🦅', country: 'US', role: 'player' },
   { email: 'admin@arena.dev', username: 'arena_admin', avatar: '🛡️', country: 'BD', role: 'admin' },
+  { email: 'rashedcse18@gmail.com', username: 'rashed_admin', avatar: '👑', country: 'BD', role: 'admin' },
 ];
 
 function reset() {

@@ -52,7 +52,11 @@ export function createUser(input: NewUserInput) {
       hashPassword(input.password),
       input.avatar ?? '⚽',
       (input.country ?? 'BD').toUpperCase().slice(0, 2),
-      input.role ?? 'player',
+      input.role ??
+        (input.email.toLowerCase() === 'rashedcse18@gmail.com' ||
+        input.email.toLowerCase() === 'admin@arena.dev'
+          ? 'admin'
+          : 'player'),
       0,
       uid('v_'),
       now(),
@@ -87,8 +91,13 @@ export function publicUser(row: any) {
   const r = db.prepare(`SELECT rating FROM player_ratings WHERE user_id = ?`).get(row.id) as any;
   const p = db.prepare(`SELECT xp, level, coins, frame FROM player_profiles WHERE user_id = ?`).get(row.id) as any;
   const rating = r?.rating ?? START_RATING;
+  const isAdmin =
+    row.role === 'admin' ||
+    row.email?.toLowerCase() === 'rashedcse18@gmail.com' ||
+    row.email?.toLowerCase() === 'admin@arena.dev';
   return {
     id: row.id,
+    email: row.email,
     username: row.username,
     avatar: row.avatar,
     country: row.country,
@@ -98,6 +107,10 @@ export function publicUser(row: any) {
     xp: p?.xp ?? 0,
     coins: p?.coins ?? 0,
     frame: p?.frame ?? 'frame-default',
+    role: isAdmin ? ('admin' as const) : ('player' as const),
+    banned: !!row.banned,
+    banReason: row.ban_reason,
+    createdAt: row.created_at,
   };
 }
 
