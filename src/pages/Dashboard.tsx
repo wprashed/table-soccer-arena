@@ -193,8 +193,6 @@ export function Dashboard() {
                 <span>Lv {user.level}</span>
                 <span className="opacity-30">|</span>
                 <span className="text-amber-300">🪙 {user.coins}</span>
-                <span className="opacity-30">|</span>
-                <span>{user.country}</span>
               </div>
             </div>
           </div>

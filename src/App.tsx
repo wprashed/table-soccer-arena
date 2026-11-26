@@ -359,7 +359,6 @@ function TopBar() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <span className="font-bold text-sm text-white truncate">{user.username}</span>
-                          <span className="chip text-[9px] py-0 px-1.5 bg-white/10 text-slate-300 uppercase">{user.country}</span>
                         </div>
                         <div className="text-[11px] text-slate-400 truncate">{user.email || 'No email attached'}</div>
                       </div>

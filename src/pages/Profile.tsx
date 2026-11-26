@@ -66,7 +66,6 @@ export function Profile({ username }: { username: string }) {
               <h1 className="text-2xl font-black">{user.username}</h1>
               <TierPill rating={user.rating} />
               <span className="chip bg-white/5 text-slate-400">Lv {user.level}</span>
-              <span className="chip bg-white/5 text-slate-400">{user.country}</span>
               <span className="chip bg-emerald-500/15 text-emerald-300 font-bold">
                 {user.position === 'defence' ? '🛡️ Defence' : user.position === 'any' ? '🎲 Any Position' : '⚽ Striker'}
               </span>

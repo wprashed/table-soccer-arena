@@ -23,21 +23,6 @@ const AVATARS = [
   '💎', '🌟', '🛡️', '🌪️', '🦊', '⚔️', '🥷', '👾',
 ];
 
-const POPULAR_COUNTRIES = [
-  { code: 'BD', flag: '🇧🇩', name: 'Bangladesh' },
-  { code: 'US', flag: '🇺🇸', name: 'USA' },
-  { code: 'GB', flag: '🇬🇧', name: 'UK' },
-  { code: 'DE', flag: '🇩🇪', name: 'Germany' },
-  { code: 'ES', flag: '🇪🇸', name: 'Spain' },
-  { code: 'BR', flag: '🇧🇷', name: 'Brazil' },
-  { code: 'FR', flag: '🇫🇷', name: 'France' },
-  { code: 'AR', flag: '🇦🇷', name: 'Argentina' },
-  { code: 'IT', flag: '🇮🇹', name: 'Italy' },
-  { code: 'JP', flag: '🇯🇵', name: 'Japan' },
-  { code: 'CA', flag: '🇨🇦', name: 'Canada' },
-  { code: 'AU', flag: '🇦🇺', name: 'Australia' },
-];
-
 export function Settings() {
   const {
     profile, refresh, toast, logout, user,
@@ -49,7 +34,6 @@ export function Settings() {
   const [username, setUsername] = useState(user?.username ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [avatar, setAvatar] = useState(user?.avatar ?? '⚽');
-  const [country, setCountry] = useState(user?.country ?? 'BD');
   const [bio, setBio] = useState('');
   const [preferredPosition, setPreferredPosition] = useState<PlayerPosition>(
     (user?.position as PlayerPosition) || (profile as any)?.profile?.preferredPosition || 'striker'
@@ -79,7 +63,6 @@ export function Settings() {
       setUsername(user.username);
       setEmail(user.email ?? '');
       setAvatar(user.avatar ?? '⚽');
-      setCountry(user.country ?? 'BD');
       if (user.position) setPreferredPosition(user.position);
     }
     if (profile) {
@@ -125,7 +108,6 @@ export function Settings() {
         username: username.trim(),
         email: email.trim().toLowerCase(),
         avatar,
-        country: country.toUpperCase().slice(0, 2),
         bio: bio.slice(0, 200),
         preferredPosition,
       });
@@ -232,7 +214,6 @@ export function Settings() {
                 <div className="flex flex-wrap items-center gap-2 mt-0.5">
                   <span className="text-xl font-black text-white truncate">{username || 'Player'}</span>
                   <TierPill rating={user?.rating ?? 1000} />
-                  <span className="chip bg-white/5 text-slate-300 uppercase">{country || 'BD'}</span>
                   <span className="chip bg-emerald-500/20 text-emerald-300 font-bold">
                     {preferredPosition === 'defence' ? '🛡️ Defence' : preferredPosition === 'any' ? '🎲 Any Position' : '⚽ Striker'}
                   </span>
@@ -326,17 +307,14 @@ export function Settings() {
                 <label className="mb-1.5 block text-xs font-black uppercase tracking-wider text-slate-200">
                   Player Username
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">@</span>
-                  <input
-                    type="text"
-                    className="input pl-8"
-                    maxLength={20}
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter your username"
-                  />
-                </div>
+                <input
+                  type="text"
+                  className="input font-medium"
+                  maxLength={20}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your username (e.g. StrikerPro)"
+                />
                 <p className="mt-1 text-[10px] text-slate-500">
                   3-20 characters. Shown in matchmaking, leaderboards, and matches.
                 </p>
@@ -346,16 +324,13 @@ export function Settings() {
                 <label className="mb-1.5 block text-xs font-black uppercase tracking-wider text-slate-200">
                   Email Address
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-bold">✉</span>
-                  <input
-                    type="email"
-                    className="input pl-8"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="user@example.com"
-                  />
-                </div>
+                <input
+                  type="email"
+                  className="input font-medium"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="user@example.com"
+                />
                 <p className="mt-1 text-[10px] text-slate-500">
                   Used for account identification and administrator access.
                 </p>
@@ -382,41 +357,6 @@ export function Settings() {
                     {a}
                   </button>
                 ))}
-              </div>
-            </div>
-
-            {/* Country / Nationality */}
-            <div className="pt-2 border-t border-white/10">
-              <label className="mb-1.5 block text-xs font-black uppercase tracking-wider text-slate-200">
-                Country / Flag
-              </label>
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                {POPULAR_COUNTRIES.map((c) => (
-                  <button
-                    key={c.code}
-                    type="button"
-                    onClick={() => setCountry(c.code)}
-                    className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition ${
-                      country === c.code
-                        ? 'bg-emerald-500 text-emerald-950 font-black'
-                        : 'bg-white/5 text-slate-300 hover:bg-white/10'
-                    }`}
-                  >
-                    <span>{c.flag}</span>
-                    <span>{c.code}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-2 max-w-xs">
-                <input
-                  type="text"
-                  className="input uppercase text-xs"
-                  maxLength={2}
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value.toUpperCase())}
-                  placeholder="Custom 2-letter ISO (e.g. BD)"
-                />
-                <span className="text-xs text-slate-400">Current: <b className="text-white">{country}</b></span>
               </div>
             </div>
 
