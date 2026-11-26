@@ -6,6 +6,7 @@ import { useApp } from '../lib/store';
 import { navigate, Link } from '../lib/router';
 import { getSocket, request } from '../lib/socket';
 import { Avatar, RankBadge, Spinner, TierPill, Empty } from '../components/ui';
+import { InviteModal } from '../components/InviteModal';
 import { tierProgress, tierFor } from '../../shared/rating';
 import type { ChallengeView, LeaderboardEntry, MatchHistoryEntry } from '../../shared/types';
 import { sfx } from '../lib/sfx';
@@ -16,6 +17,14 @@ export function Dashboard() {
   const [busy, setBusy] = useState<string | null>(null);
   const [joinCode, setJoinCode] = useState('');
   const [joinOpen, setJoinOpen] = useState(false);
+  const [inviteData, setInviteData] = useState<{
+    open: boolean;
+    code: string;
+    matchId?: string;
+    challengeName?: string;
+    title?: string;
+    subtitle?: string;
+  } | null>(null);
 
   useEffect(() => {
     api.get<LeaderboardEntry[]>('/leaderboard?scope=global').then((l) => setLeaders(l.slice(0, 3))).catch(() => {});
@@ -87,12 +96,53 @@ export function Dashboard() {
   };
 
   const quickMatch = () => navigate('/play/quick');
+  const openInviteFriends = async () => {
+    setBusy('invite');
+    try {
+      const res = await request<any>('room:create', { rated: true });
+      if (!res?.ok) throw new Error(res?.error ?? 'Could not create room');
+      const code = res.code || res.roomCode;
+      setInviteData({
+        open: true,
+        code,
+        matchId: res.matchId,
+        title: 'Invite Friends to 2v2 Foosball',
+        subtitle: 'Share your room code or link to play real-time foosball together.',
+      });
+    } catch (e: any) {
+      toast(e.message, 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const shareChallenge = async (c: ChallengeView) => {
+    setBusy(`share_${c.id}`);
+    try {
+      const res = await request<any>('room:create', { rated: true });
+      if (!res?.ok) throw new Error(res?.error ?? 'Could not create challenge room');
+      const code = res.code || res.roomCode;
+      setInviteData({
+        open: true,
+        code,
+        matchId: res.matchId,
+        challengeName: c.title,
+        title: `Challenge a Friend: "${c.title}"`,
+        subtitle: `Challenge a friend to beat your progress on "${c.title}" (${c.progress}/${c.target})!`,
+      });
+    } catch (e: any) {
+      toast(e.message, 'error');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const createRoom = async () => {
     setBusy('room');
     try {
       const res = await request<any>('room:create', { rated: true });
       if (!res?.ok) throw new Error(res?.error ?? 'Could not create room');
-      toast(`Room ${res.code} created — invite your friends`, 'success');
+      toast(`Room ${res.code || res.roomCode} created — invite your friends`, 'success');
       navigate(`/match/${res.matchId}`);
     } catch (e: any) {
       toast(e.message, 'error');
@@ -235,12 +285,19 @@ export function Dashboard() {
             Ranked 2v2 quick match · Elo on the line
           </div>
 
-          {/* secondary modes: one compact row, no duplicate "quick match" card */}
-          <div className="grid grid-cols-3 gap-2">
+          {/* secondary modes */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <PlayCard
+              icon="👥"
+              title="Invite Friends"
+              hint="Share link"
+              onClick={openInviteFriends}
+              loading={busy === 'invite'}
+            />
             <PlayCard
               icon="🔒"
               title="Private Room"
-              hint="Invite friends"
+              hint="Create room"
               onClick={createRoom}
               loading={busy === 'room'}
             />
@@ -285,7 +342,7 @@ export function Dashboard() {
                 .map((c) => (
                 <div key={c.id} className="glass-soft rounded-xl p-3">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="truncate text-xs font-bold">{c.title}</div>
                       <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
                         <div
@@ -297,13 +354,24 @@ export function Dashboard() {
                         {c.progress}/{c.target} · 🪙 {c.reward} · {c.xp} XP
                       </div>
                     </div>
-                    <button
-                      className="btn btn-primary shrink-0 px-2 py-1 text-[10px]"
-                      disabled={!c.complete || c.claimed}
-                      onClick={() => claimChallenge(c)}
-                    >
-                      {c.claimed ? 'Claimed' : c.complete ? 'Claim' : 'Locked'}
-                    </button>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-300 hover:bg-emerald-500/20 active:scale-95"
+                        title="Share challenge with a friend"
+                        onClick={() => shareChallenge(c)}
+                        disabled={busy === `share_${c.id}`}
+                      >
+                        {busy === `share_${c.id}` ? <Spinner size={10} /> : '📤 Share'}
+                      </button>
+                      <button
+                        className="btn btn-primary px-2.5 py-1 text-[10px]"
+                        disabled={!c.complete || c.claimed}
+                        onClick={() => claimChallenge(c)}
+                      >
+                        {c.claimed ? 'Claimed' : c.complete ? 'Claim' : 'Locked'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -402,6 +470,20 @@ export function Dashboard() {
           </div>
         )}
       </motion.section>
+
+      {/* ---------------------------------------------------- share / invite modal */}
+      {inviteData && (
+        <InviteModal
+          open={inviteData.open}
+          onClose={() => setInviteData(null)}
+          code={inviteData.code}
+          matchId={inviteData.matchId}
+          challengeName={inviteData.challengeName}
+          title={inviteData.title}
+          subtitle={inviteData.subtitle}
+          onEnterRoom={inviteData.matchId ? () => navigate(`/match/${inviteData.matchId}`) : undefined}
+        />
+      )}
     </div>
   );
 }

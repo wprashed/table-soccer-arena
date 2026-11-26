@@ -32,7 +32,7 @@ export function JoinRoom({ code }: { code: string }) {
     return () => {
       cancelled = true;
     };
-  }, [code, profile, toast]);
+  }, [code, user, toast]);
 
   return (
     <div className="grid min-h-[60vh] place-items-center">

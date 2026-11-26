@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { request } from '../lib/socket';
 import { useApp } from '../lib/store';
 import { Avatar, Spinner } from '../components/ui';
+import { InviteModal } from '../components/InviteModal';
 import type { MatchView } from '../../shared/types';
 import { sfx } from '../lib/sfx';
 
@@ -20,6 +21,7 @@ export function LobbyPanel({
   const [busy, setBusy] = useState<string | null>(null);
   const [friends, setFriends] = useState<{ id: string; username: string; avatar: string; online: boolean }[]>([]);
   const [invited, setInvited] = useState<string[]>([]);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   const code = (view as any).roomCode ?? '';
   const isHost = mySlot === 0;
@@ -98,8 +100,8 @@ export function LobbyPanel({
           </button>
         </div>
 
-        {/* room code */}
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        {/* room code & share options */}
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
           <button
             onClick={() => copy(code, 'Room code')}
             className="glass-soft flex items-center justify-between rounded-xl px-3 py-2 text-left hover:border-emerald-400/50"
@@ -111,14 +113,28 @@ export function LobbyPanel({
             <span className="text-xs text-slate-500">copy</span>
           </button>
           <button
-            onClick={() => copy(`${window.location.origin}/join/${code}`, 'Invite link')}
+            onClick={() => {
+              const origin = typeof window !== 'undefined' ? window.location.origin : '';
+              const pathname = typeof window !== 'undefined' ? window.location.pathname.replace(/\/$/, '') : '';
+              copy(`${origin}${pathname}/?join=${code}`, 'Invite link');
+            }}
             className="glass-soft flex items-center justify-between rounded-xl px-3 py-2 text-left hover:border-emerald-400/50"
           >
             <div>
               <div className="text-[9px] font-black uppercase tracking-widest text-slate-500">Invite link</div>
-              <div className="truncate text-xs font-bold text-slate-300">/join/{code}</div>
+              <div className="truncate text-xs font-bold text-slate-300">/?join={code}</div>
             </div>
             <span className="text-xs text-slate-500">copy</span>
+          </button>
+          <button
+            onClick={() => setShareModalOpen(true)}
+            className="glass-soft flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-left hover:bg-emerald-500/20 active:scale-95 sm:col-span-1"
+          >
+            <div>
+              <div className="text-[9px] font-black uppercase tracking-widest text-emerald-400">Share with friends</div>
+              <div className="text-xs font-black text-white">📱 WhatsApp, X…</div>
+            </div>
+            <span className="text-xs text-emerald-300">📤</span>
           </button>
         </div>
 
@@ -227,6 +243,15 @@ export function LobbyPanel({
           press <b>+ bot</b> to fill empty seats (bot partners make the match unrated).
         </p>
       </div>
+
+      <InviteModal
+        open={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        code={code}
+        matchId={view.id}
+        title="Invite Players to Lobby"
+        subtitle="Send this link to friends so they can join your 2v2 foosball match directly."
+      />
     </div>
   );
 }

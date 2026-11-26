@@ -36,8 +36,21 @@ export function normalizePath(raw: string): string {
 function safeInitialPath(): string {
   try {
     if (typeof window === 'undefined') return '/';
+    // Check ?join=CODE or ?room=CODE in search params
+    const searchParams = new URLSearchParams(window.location.search);
+    const joinParam = searchParams.get('join') || searchParams.get('room') || searchParams.get('challenge');
+    if (joinParam) {
+      return `/join/${encodeURIComponent(joinParam)}`;
+    }
+    // Check hash routing
     if (window.location.hash.startsWith('#/')) {
-      return normalizePath(window.location.hash.slice(1));
+      const hashPart = window.location.hash.slice(1);
+      return normalizePath(hashPart);
+    }
+    if (window.location.hash.includes('join=')) {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#\/?/, ''));
+      const code = hashParams.get('join');
+      if (code) return `/join/${encodeURIComponent(code)}`;
     }
     return normalizePath(window.location.pathname);
   } catch {

@@ -36,15 +36,21 @@ export function AuthPage() {
     setNotice(null);
     setBusy(true);
     try {
+      const hasJoinTarget =
+        typeof window !== 'undefined' &&
+        (window.location.hash.includes('join') ||
+          window.location.search.includes('join') ||
+          window.location.pathname.includes('/join/'));
+
       if (mode === 'login') {
         await login(email, password);
         toast('Welcome back!', 'success');
-        navigate('/');
+        if (!hasJoinTarget) navigate('/');
       } else if (mode === 'register') {
         const res = await register({ email, username, password, country, avatar });
         toast(`Account created — you start at 1000 rating`, 'success');
         if (res?.verification?.devToken) setVerifyLink(res.verification.link);
-        navigate('/');
+        if (!hasJoinTarget) navigate('/');
       } else if (mode === 'forgot') {
         const res = await api.post<{ devToken?: string; message: string }>('/auth/forgot-password', { email });
         setNotice(res.message);
@@ -76,7 +82,12 @@ export function AuthPage() {
     try {
       await login(d.email, d.password);
       toast(`Signed in as ${d.label}`, 'success');
-      navigate('/');
+      const hasJoinTarget =
+        typeof window !== 'undefined' &&
+        (window.location.hash.includes('join') ||
+          window.location.search.includes('join') ||
+          window.location.pathname.includes('/join/'));
+      if (!hasJoinTarget) navigate('/');
     } catch (err: any) {
       setError(err?.message ?? 'Demo login failed');
     } finally {

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useApp } from '../lib/store';
 import { Avatar, Empty, Modal, TierPill, Spinner } from '../components/ui';
+import { InviteModal } from '../components/InviteModal';
 import { getSocket, request } from '../lib/socket';
 import type { FriendView } from '../../shared/types';
 import { navigate } from '../lib/router';
@@ -18,6 +19,8 @@ export function Social() {
   const [data, setData] = useState<SocialData | null>(null);
   const [username, setUsername] = useState('');
   const [busy, setBusy] = useState(false);
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteModalData, setInviteModalData] = useState<{ open: boolean; code: string; matchId?: string } | null>(null);
   const [report, setReport] = useState<{ id: string; username: string } | null>(null);
   const [reportReason, setReportReason] = useState('cheating');
   const [reportDetails, setReportDetails] = useState('');
@@ -90,10 +93,27 @@ export function Social() {
       const created = await request<any>('room:create', { rated: true });
       if (!created?.ok) throw new Error(created?.error ?? 'Could not create room');
       await request('room:invite', { toUserId: f.id, matchId: created.matchId });
-      toast(`Invite sent to ${f.username} · room ${created.code}`, 'success');
+      toast(`Invite sent to ${f.username} · room ${created.code || created.roomCode}`, 'success');
       navigate(`/match/${created.matchId}`);
     } catch (e: any) {
       toast(e.message, 'error');
+    }
+  };
+
+  const createShareableInvite = async () => {
+    setInviteBusy(true);
+    try {
+      const created = await request<any>('room:create', { rated: true });
+      if (!created?.ok) throw new Error(created?.error ?? 'Could not create room');
+      setInviteModalData({
+        open: true,
+        code: created.code || created.roomCode,
+        matchId: created.matchId,
+      });
+    } catch (e: any) {
+      toast(e.message, 'error');
+    } finally {
+      setInviteBusy(false);
     }
   };
 
@@ -107,9 +127,18 @@ export function Social() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-black">Friends</h1>
-        <p className="text-xs text-slate-400">Invite friends to private rooms or compare ratings.</p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-black">Friends & Invites</h1>
+          <p className="text-xs text-slate-400">Invite friends to private rooms, share match links, or compare ratings.</p>
+        </div>
+        <button
+          onClick={createShareableInvite}
+          disabled={inviteBusy}
+          className="btn btn-primary inline-flex items-center gap-2 self-start py-2 sm:self-auto"
+        >
+          {inviteBusy ? <Spinner size={16} /> : '📤'} Invite via Link / Social
+        </button>
       </div>
 
       <div className="glass rounded-2xl p-4">
@@ -253,6 +282,20 @@ export function Social() {
           </button>
         </div>
       </Modal>
+
+      {inviteModalData && (
+        <InviteModal
+          open={inviteModalData.open}
+          onClose={() => setInviteModalData(null)}
+          code={inviteModalData.code}
+          matchId={inviteModalData.matchId}
+          title="Invite Friends to 2v2 Match"
+          subtitle="Share your link or code directly to play foosball together."
+          onEnterRoom={
+            inviteModalData.matchId ? () => navigate(`/match/${inviteModalData.matchId}`) : undefined
+          }
+        />
+      )}
     </div>
   );
 }

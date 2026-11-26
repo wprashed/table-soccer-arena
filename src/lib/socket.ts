@@ -140,9 +140,11 @@ export function request<T = any>(event: string, payload: any = {}, timeoutMs = 8
 
     if (event === 'room:create') {
       const match = createLocalMatch({ mode: 'practice', solo: false });
+      const roomCode = String(Math.floor(100000 + Math.random() * 900000));
       return Promise.resolve({
         ok: true,
-        roomCode: 'ROOM' + Math.floor(1000 + Math.random() * 9000),
+        code: roomCode,
+        roomCode,
         matchId: match.id,
       } as any);
     }
