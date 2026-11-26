@@ -8,10 +8,6 @@ import { Spinner } from '../components/ui';
 import { sfx } from '../lib/sfx';
 
 const AVATARS = ['⚽', '🔥', '🦈', '🚀', '🐉', '🦅', '👑', '🎯', '🐺', '⚡', '🥇', '🤖'];
-const DEMO = [
-  { label: 'Admin (rashedcse18@gmail.com)', email: 'rashedcse18@gmail.com', password: 'password123' },
-  { label: 'Demo rival (SamRocket)', email: 'sam@arena.dev', password: 'demo1234' },
-];
 
 type Mode = 'login' | 'register' | 'forgot' | 'reset';
 
@@ -71,25 +67,6 @@ export function AuthPage() {
       }
       setError(msg);
       sfx.click();
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const demoLogin = async (d: (typeof DEMO)[number]) => {
-    setBusy(true);
-    setError(null);
-    try {
-      await login(d.email, d.password);
-      toast(`Signed in as ${d.label}`, 'success');
-      const hasJoinTarget =
-        typeof window !== 'undefined' &&
-        (window.location.hash.includes('join') ||
-          window.location.search.includes('join') ||
-          window.location.pathname.includes('/join/'));
-      if (!hasJoinTarget) navigate('/');
-    } catch (err: any) {
-      setError(err?.message ?? 'Demo login failed');
     } finally {
       setBusy(false);
     }
@@ -312,23 +289,6 @@ export function AuthPage() {
                   Back to sign in
                 </button>
               )}
-            </div>
-
-            <div className="mt-5 border-t border-white/10 pt-4">
-              <div className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                Dev mode — one-click accounts
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {DEMO.map((d) => (
-                  <button key={d.email} className="btn btn-ghost py-2 text-xs" onClick={() => demoLogin(d)} disabled={busy}>
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
-                Seeded accounts (password <code className="text-slate-400">demo1234</code>). Sign in with two
-                browsers — or an incognito window — to play a real 2v2 against yourself.
-              </p>
             </div>
           </div>
         </div>
