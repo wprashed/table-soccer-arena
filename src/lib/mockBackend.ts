@@ -224,8 +224,27 @@ export function getMockSessionUser(token?: string | null): PublicUser | null {
   return checkAdmin(users[0]) || null;
 }
 
+export function computeDailyLogin(p: ProfileResponse) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const lastClaim = p.profile.lastDailyClaim ? p.profile.lastDailyClaim.slice(0, 10) : null;
+
+  const canClaim = lastClaim !== todayStr;
+  let streak = p.profile.dailyStreak || 1;
+  if (lastClaim && lastClaim !== todayStr && lastClaim !== yesterdayStr) {
+    // missed more than 1 day, streak resets to 1
+    streak = 1;
+    p.profile.dailyStreak = 1;
+  }
+  p.daily = {
+    canClaim,
+    streak,
+    rewards: DAILY_LOGIN_REWARDS,
+  };
+}
+
 export function createDefaultProfile(user: PublicUser): ProfileResponse {
-  return {
+  const p: ProfileResponse = {
     user,
     profile: {
       bio: 'Foosball competitor on Table Soccer Arena!',
@@ -266,6 +285,8 @@ export function createDefaultProfile(user: PublicUser): ProfileResponse {
       claimed: false,
     })),
   };
+  computeDailyLogin(p);
+  return p;
 }
 
 export async function handleMockApi(path: string, method: string, body?: any, token?: string | null): Promise<any> {
@@ -402,9 +423,11 @@ export async function handleMockApi(path: string, method: string, body?: any, to
     if (!profile) {
       profile = createDefaultProfile(currentUser);
       profiles[currentUser.id] = profile;
-      saveProfiles(profiles);
     }
     profile.user = currentUser;
+    computeDailyLogin(profile);
+    profiles[currentUser.id] = profile;
+    saveProfiles(profiles);
     return profile;
   }
 
@@ -481,15 +504,39 @@ export async function handleMockApi(path: string, method: string, body?: any, to
   // 11. REWARDS DAILY
   if (normPath === '/rewards/daily' && method === 'POST') {
     if (!currentUser) throw new Error('Unauthorized');
-    const reward = 50;
+    const profiles = getProfiles();
+    const p = profiles[currentUser.id] || createDefaultProfile(currentUser);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const lastClaim = p.profile.lastDailyClaim ? p.profile.lastDailyClaim.slice(0, 10) : null;
+
+    if (lastClaim === todayStr) {
+      throw new Error('Daily reward already claimed today. Come back tomorrow!');
+    }
+
+    const nextStreak = lastClaim === yesterdayStr ? Math.min(7, (p.profile.dailyStreak || 1) + 1) : 1;
+    const reward = DAILY_LOGIN_REWARDS[Math.min(nextStreak - 1, DAILY_LOGIN_REWARDS.length - 1)] || 50;
+
     currentUser.coins += reward;
+    p.user.coins = currentUser.coins;
+    p.profile.lastDailyClaim = new Date().toISOString();
+    p.profile.dailyStreak = nextStreak;
+    p.daily = {
+      canClaim: false,
+      streak: nextStreak,
+      rewards: DAILY_LOGIN_REWARDS,
+    };
+
+    profiles[currentUser.id] = p;
+    saveProfiles(profiles);
+
     const users = getUsers();
     const idx = users.findIndex((u) => u.id === currentUser.id);
     if (idx >= 0) {
       users[idx].coins = currentUser.coins;
       saveUsers(users);
     }
-    return { reward, streak: 2 };
+    return { ok: true, reward, streak: nextStreak, coins: currentUser.coins };
   }
 
   // 12. REWARDS CHALLENGE

@@ -61,7 +61,7 @@ export function Dashboard() {
       highestRating: user.rating || 1000,
     },
     achievements: [],
-    daily: { canClaim: true, streak: 1, rewards: [40, 55, 70, 85, 100, 130, 200] },
+    daily: { canClaim: false, streak: 1, rewards: [40, 55, 70, 85, 100, 130, 200] },
     challenges: [],
     matchHistory: [],
   };

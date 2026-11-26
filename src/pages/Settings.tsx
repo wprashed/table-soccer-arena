@@ -5,6 +5,7 @@ import { useApp } from '../lib/store';
 import { Spinner } from '../components/ui';
 import { previewSound } from '../lib/audio';
 import { Link } from '../lib/router';
+import { usePwa } from '../lib/pwa';
 import {
   CONTROL_LABELS,
   DEFAULT_BINDINGS,
@@ -21,6 +22,7 @@ export function Settings() {
     profile, refresh, toast, logout, user,
     soundOn, toggleSound, sfxVolume, setSfxVolume, crowdVolume, setCrowdVolume,
   } = useApp();
+  const { canInstall, install, isStandalone } = usePwa();
   const [avatar, setAvatar] = useState(user?.avatar ?? '⚽');
   const [country, setCountry] = useState(user?.country ?? 'BD');
   const [bio, setBio] = useState('');
@@ -335,6 +337,32 @@ export function Settings() {
             <button className="btn btn-flame w-full py-2.5" onClick={() => logout()}>
               Sign out
             </button>
+          </div>
+
+          <div className="glass space-y-3 rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-black uppercase tracking-widest text-slate-300">App & Mobile (PWA)</h2>
+                <p className="text-xs text-slate-400">Install Table Soccer Arena on your phone or desktop for full-screen offline-ready play.</p>
+              </div>
+              <span className="text-2xl">📱</span>
+            </div>
+            {isStandalone ? (
+              <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-300">
+                <span className="text-base">✓</span> Running as standalone installed app
+              </div>
+            ) : canInstall ? (
+              <button
+                className="btn btn-primary w-full py-2.5 text-xs font-bold"
+                onClick={() => install()}
+              >
+                📲 Install Table Soccer Arena App
+              </button>
+            ) : (
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-400">
+                <b className="text-slate-200">Mobile Safari / iOS:</b> Tap the <b className="text-white">Share</b> button (<span className="text-sm font-bold">↑</span>) in Safari, then choose <b className="text-emerald-400">"Add to Home Screen"</b> to play full-screen.
+              </div>
+            )}
           </div>
 
           <div className="glass space-y-3 rounded-2xl p-4">

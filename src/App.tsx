@@ -7,6 +7,7 @@ import { reconnectAuth } from './lib/socket';
 import { setSfxEnabled, sfx } from './lib/sfx';
 import { unlockAudio } from './lib/audio';
 import { Avatar, Spinner, ToastHost, TierPill } from './components/ui';
+import { usePwa } from './lib/pwa';
 import { AuthPage } from './pages/AuthPage';
 import { Dashboard } from './pages/Dashboard';
 import { QuickMatch } from './pages/QuickMatch';
@@ -200,9 +201,10 @@ function Routes({ path }: { path: string }) {
 
 function TopBar() {
   const { user, online, logout } = useApp();
+  const { canInstall, install, isStandalone } = usePwa();
   if (!user) return null;
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/10 bg-ink-950/80 px-3 py-2 backdrop-blur-xl sm:px-5">
+    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/10 bg-ink-950/80 px-3 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] backdrop-blur-xl sm:px-5">
       <Link to="/" className="flex items-center gap-2">
         <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 text-base text-emerald-950 shadow-lg shadow-emerald-500/30">
           ⚽
@@ -225,6 +227,15 @@ function TopBar() {
       </nav>
 
       <div className="ml-auto flex items-center gap-2">
+        {canInstall && !isStandalone && (
+          <button
+            onClick={() => install()}
+            className="chip border border-emerald-400/40 bg-emerald-500/20 text-emerald-300 font-bold hover:bg-emerald-500/30 transition text-xs"
+            title="Install Table Soccer Arena app"
+          >
+            📲 Install
+          </button>
+        )}
         <span className="chip hidden bg-emerald-500/15 text-emerald-300 sm:inline-flex">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> {online || 1} online
         </span>
