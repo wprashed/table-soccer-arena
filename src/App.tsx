@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Component } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useApp } from './lib/store';
 import { Link, matchRoute, navigate, useLocation } from './lib/router';
@@ -173,27 +173,91 @@ export default function App() {
   );
 }
 
+class RouteErrorBoundary extends Component<
+  { children: React.ReactNode; path: string },
+  { hasError: boolean }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: any, info: any) {
+    console.error('Subpage render error:', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="glass mx-auto my-12 max-w-md rounded-2xl p-6 text-center">
+          <div className="text-4xl">⚽</div>
+          <div className="mt-2 text-base font-black text-white">Could not load this view</div>
+          <p className="mt-1 text-xs text-slate-400">
+            A temporary display error occurred. You can reload this view or return to the main dashboard.
+          </p>
+          <div className="mt-4 flex justify-center gap-2">
+            <button
+              onClick={() => this.setState({ hasError: false })}
+              className="btn btn-secondary px-3.5 py-2 text-xs font-bold"
+            >
+              Try Again
+            </button>
+            <Link to="/" className="btn btn-primary px-3.5 py-2 text-xs font-bold">
+              Back to Home
+            </Link>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function Routes({ path }: { path: string }) {
+  const { user } = useApp();
+  return (
+    <RouteErrorBoundary key={path} path={path}>
+      {renderRoute(path, user?.username)}
+    </RouteErrorBoundary>
+  );
+}
+
+function renderRoute(path: string, currentUsername?: string) {
   if (matchRoute('/', path)) return <Dashboard />;
-  if (matchRoute('/play/quick', path)) return <QuickMatch />;
+  // Play & matchmaking
+  if (matchRoute('/play/quick', path) || matchRoute('/play', path) || matchRoute('/quick', path)) return <QuickMatch />;
   if (matchRoute('/practice', path)) return <Practice />;
-  if (matchRoute('/leaderboard', path)) return <Leaderboard />;
-  if (matchRoute('/friends', path)) return <Social />;
-  if (matchRoute('/tournaments', path)) return <Tournaments />;
-  if (matchRoute('/store', path)) return <Store />;
-  if (matchRoute('/history', path)) return <History />;
-  if (matchRoute('/settings', path)) return <Settings />;
+  // Ranks & leaderboards
+  if (matchRoute('/leaderboard', path) || matchRoute('/ranks', path) || matchRoute('/rankings', path)) return <Leaderboard />;
+  // Social & friends
+  if (matchRoute('/friends', path) || matchRoute('/social', path)) return <Social />;
+  // Tournaments & cups
+  if (matchRoute('/tournaments', path) || matchRoute('/cups', path) || matchRoute('/cup', path)) return <Tournaments />;
+  // Store & cosmetics
+  if (matchRoute('/store', path) || matchRoute('/shop', path)) return <Store />;
+  // History & past matches
+  if (matchRoute('/history', path) || matchRoute('/matches', path)) return <History />;
+  // Settings & account
+  if (matchRoute('/settings', path) || matchRoute('/account', path)) return <Settings />;
+  // Admin console
   if (matchRoute('/admin', path)) return <Admin />;
+  // Direct profile route
+  if (matchRoute('/profile', path)) return <Profile username={currentUsername ?? ''} />;
+  // Room join
   const join = matchRoute('/join/:code', path);
   if (join) return <JoinRoom code={join.code} />;
+  // Public player profile
   const player = matchRoute('/player/:username', path);
   if (player) return <Profile username={player.username} />;
+
   return (
     <div className="grid place-items-center py-24 text-center">
       <div className="text-5xl">🧭</div>
       <div className="mt-2 text-lg font-black">Page not found</div>
-      <Link to="/" className="btn btn-primary mt-3 px-4 py-2 text-sm">
-        Back to dashboard
+      <p className="mt-1 text-xs text-slate-400">The requested page "{path}" does not exist.</p>
+      <Link to="/" className="btn btn-primary mt-3 px-4 py-2 text-sm font-bold">
+        Back to arena
       </Link>
     </div>
   );

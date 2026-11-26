@@ -11,6 +11,9 @@ export function getBasePath(): string {
   // If hosted on GitHub Pages or subfolder, extract first segment
   if (window.location.hostname.endsWith('github.io')) {
     const segments = pathname.split('/').filter(Boolean);
+    if (segments.length > 0 && segments[0] === 'table-soccer-arena') {
+      return '/table-soccer-arena';
+    }
     if (segments.length > 0 && !segments[0].includes('.')) {
       return '/' + segments[0];
     }
@@ -36,6 +39,11 @@ export function normalizePath(raw: string): string {
 function safeInitialPath(): string {
   try {
     if (typeof window === 'undefined') return '/';
+    // Check if redirected with ?/path from 404.html
+    if (window.location.search.startsWith('?/')) {
+      const redirected = window.location.search.slice(1).split('&')[0];
+      return normalizePath(redirected);
+    }
     // Check ?join=CODE or ?room=CODE in search params
     const searchParams = new URLSearchParams(window.location.search);
     const joinParam = searchParams.get('join') || searchParams.get('room') || searchParams.get('challenge');

@@ -43,10 +43,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Navigation requests: Network-first, fallback to cached index.html
+  // Navigation requests: Network-first, fallback to cached index.html if offline or 404
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req).catch(() => caches.match('./index.html').then((res) => res || caches.match('./')))
+      fetch(req)
+        .then((res) => {
+          // If GitHub Pages returns 404 for an SPA sub-route, fallback to index.html
+          if (!res || res.status === 404) {
+            return caches.match('./index.html').then((cached) => cached || caches.match('./') || res);
+          }
+          return res;
+        })
+        .catch(() => caches.match('./index.html').then((res) => res || caches.match('./')))
     );
     return;
   }

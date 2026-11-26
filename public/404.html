@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Table Soccer Arena</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script type="text/javascript">
+      // Single Page Apps for GitHub Pages
+      // MIT License - https://github.com/rafgraph/spa-github-pages
+      // This script takes the current url and converts the path and query
+      // string into just a query string, then redirects the browser
+      // to the new url with only a query string and hash fragment.
+      (function () {
+        var pathSegmentsToKeep = 1; // for /table-soccer-arena/
+
+        var l = window.location;
+        // If not hosted on a *.github.io subpath (e.g. custom domain), keep 0
+        if (!l.hostname.endsWith('github.io')) {
+          pathSegmentsToKeep = 0;
+        }
+
+        var newPath =
+          l.protocol +
+          '//' +
+          l.hostname +
+          (l.port ? ':' + l.port : '') +
+          l.pathname
+            .split('/')
+            .slice(0, 1 + pathSegmentsToKeep)
+            .join('/') +
+          '/?/' +
+          l.pathname
+            .slice(1)
+            .split('/')
+            .slice(pathSegmentsToKeep)
+            .join('/')
+            .replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash;
+
+        l.replace(newPath);
+      })();
+    </script>
+    <style>
+      body {
+        margin: 0;
+        background: #05080f;
+        color: #e8eefc;
+        font-family: system-ui, -apple-system, sans-serif;
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        text-align: center;
+      }
+      .spinner {
+        width: 36px;
+        height: 36px;
+        border: 3px solid rgba(23, 185, 120, 0.2);
+        border-top-color: #17b978;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 16px;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <div class="spinner"></div>
+      <div style="font-weight: 800; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; color: #17b978;">
+        Loading Arena…
+      </div>
+    </div>
+  </body>
+</html>
