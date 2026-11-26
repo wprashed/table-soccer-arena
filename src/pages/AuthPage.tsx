@@ -10,8 +10,7 @@ import { sfx } from '../lib/sfx';
 const AVATARS = ['⚽', '🔥', '🦈', '🚀', '🐉', '🦅', '👑', '🎯', '🐺', '⚡', '🥇', '🤖'];
 const DEMO = [
   { label: 'Admin (rashedcse18@gmail.com)', email: 'rashedcse18@gmail.com', password: 'password123' },
-  { label: 'Demo player', email: 'alex@arena.dev', password: 'demo1234' },
-  { label: 'Demo rival', email: 'sam@arena.dev', password: 'demo1234' },
+  { label: 'Demo rival (SamRocket)', email: 'sam@arena.dev', password: 'demo1234' },
 ];
 
 type Mode = 'login' | 'register' | 'forgot' | 'reset';

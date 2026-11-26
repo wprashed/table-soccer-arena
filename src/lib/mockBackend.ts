@@ -42,6 +42,9 @@ function initStorage() {
     users = [];
   }
 
+  // Remove AlexStriker / usr_alex if previously stored
+  users = users.filter((u) => u.username !== 'AlexStriker' && u.id !== 'usr_alex' && u.email !== 'alex@arena.dev');
+
   // Ensure rashedcse18@gmail.com exists and is admin
   const rashed = users.find((u) => u.email?.toLowerCase() === 'rashedcse18@gmail.com');
   if (!rashed) {
@@ -64,24 +67,7 @@ function initStorage() {
     rashed.role = 'admin';
   }
 
-  // Ensure demo players exist
-  if (!users.some((u) => u.id === 'usr_alex')) {
-    users.push({
-      id: 'usr_alex',
-      username: 'AlexStriker',
-      avatar: '⚽',
-      country: 'BD',
-      rating: 1120,
-      tier: 'Silver',
-      level: 4,
-      xp: 950,
-      coins: 480,
-      role: 'player',
-      email: 'alex@arena.dev',
-      password: 'demo1234',
-      createdAt: '2026-11-21T09:00:00Z',
-    });
-  }
+  // Ensure demo player exists
   if (!users.some((u) => u.id === 'usr_sam')) {
     users.push({
       id: 'usr_sam',
@@ -118,15 +104,6 @@ function getReports(): any[] {
       details: 'Spun the 5-bar continuously during 2v2 match.',
       status: 'open',
       created_at: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      id: 2,
-      target_id: 'usr_alex',
-      target: 'AlexStriker',
-      reason: 'inappropriate_name',
-      details: 'Requested username review.',
-      status: 'open',
-      created_at: new Date(Date.now() - 7200000).toISOString(),
     },
   ];
 }
@@ -176,7 +153,8 @@ function logAudit(actor: string, action: string, target: string, meta: any = {})
 
 function getUsers(): (PublicUser & { email?: string; password?: string })[] {
   try {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+    const list: any[] = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+    return list.filter((u) => u.username !== 'AlexStriker' && u.id !== 'usr_alex' && u.email !== 'alex@arena.dev');
   } catch {
     return [];
   }
@@ -377,23 +355,23 @@ export async function handleMockApi(path: string, method: string, body?: any, to
       return { token: newToken, user: demoUser };
     }
 
-    if (!user && (email === 'alex@arena.dev' || email === 'sam@arena.dev')) {
-      const demoId = email === 'alex@arena.dev' ? 'usr_alex' : 'usr_sam';
-      const demoUsername = email === 'alex@arena.dev' ? 'AlexStriker' : 'SamRocket';
-      const demoAvatar = email === 'alex@arena.dev' ? '⚽' : '🚀';
-      const rating = email === 'alex@arena.dev' ? 1120 : 1280;
+    if (!user && email === 'sam@arena.dev') {
+      const demoId = 'usr_sam';
+      const demoUsername = 'SamRocket';
+      const demoAvatar = '🚀';
+      const rating = 1280;
       const demoUser = {
         id: demoId,
         email,
         username: demoUsername,
         password: 'demo1234',
         avatar: demoAvatar,
-        country: 'BD',
+        country: 'US',
         rating,
         tier: tierFor(rating).tier,
-        level: 4,
-        xp: 800,
-        coins: 500,
+        level: 6,
+        xp: 1600,
+        coins: 750,
         role: 'player' as const,
         createdAt: new Date().toISOString(),
       };
@@ -558,7 +536,7 @@ export async function handleMockApi(path: string, method: string, body?: any, to
   if (normPath.startsWith('/leaderboard')) {
     if (normPath === '/leaderboard/tournaments') {
       return [
-        { rank: 1, name: 'Champions League S1', winner: 'AlexStriker', format: 'knockout', date: '2026-11-20' },
+        { rank: 1, name: 'Champions League S1', winner: 'ThunderKick', format: 'knockout', date: '2026-11-20' },
         { rank: 2, name: 'Winter Arena Cup', winner: 'SamRocket', format: 'league', date: '2026-11-15' },
       ];
     }
@@ -568,9 +546,8 @@ export async function handleMockApi(path: string, method: string, body?: any, to
       { rank: 2, userId: 'bot_pro2', username: 'ApexPredator', avatar: '🦈', country: 'BR', rating: 1765, tier: 'Diamond', matches: 118, winRate: 68 },
       { rank: 3, userId: 'bot_pro3', username: 'GoldenStriker', avatar: '👑', country: 'ES', rating: 1640, tier: 'Diamond', matches: 95, winRate: 64 },
       { rank: 4, userId: 'usr_sam', username: 'SamRocket', avatar: '🚀', country: 'US', rating: 1280, tier: 'Gold', matches: 45, winRate: 58 },
-      { rank: 5, userId: 'usr_alex', username: 'AlexStriker', avatar: '⚽', country: 'BD', rating: 1120, tier: 'Silver', matches: 32, winRate: 53 },
-      { rank: 6, userId: 'bot_mid1', username: 'DragonSpin', avatar: '🐉', country: 'JP', rating: 1090, tier: 'Silver', matches: 28, winRate: 50 },
-      { rank: 7, userId: 'bot_mid2', username: 'SwiftEagle', avatar: '🦅', country: 'FR', rating: 1040, tier: 'Silver', matches: 22, winRate: 48 },
+      { rank: 5, userId: 'bot_mid1', username: 'DragonSpin', avatar: '🐉', country: 'JP', rating: 1090, tier: 'Silver', matches: 28, winRate: 50 },
+      { rank: 6, userId: 'bot_mid2', username: 'SwiftEagle', avatar: '🦅', country: 'FR', rating: 1040, tier: 'Silver', matches: 22, winRate: 48 },
     ];
 
     if (currentUser) {
@@ -665,7 +642,6 @@ export async function handleMockApi(path: string, method: string, body?: any, to
   if (normPath === '/friends') {
     return {
       friends: [
-        { id: 'usr_alex', username: 'AlexStriker', avatar: '⚽', rating: 1120, tier: 'Silver', online: true, lastSeen: null },
         { id: 'usr_sam', username: 'SamRocket', avatar: '🚀', rating: 1280, tier: 'Gold', online: false, lastSeen: '2h ago' },
       ],
       incoming: [],
