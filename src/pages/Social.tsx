@@ -17,9 +17,7 @@ interface SocialData {
 export function Social() {
   const { toast, refresh } = useApp();
   const [data, setData] = useState<SocialData>({
-    friends: [
-      { id: 'usr_sam', username: 'SamRocket', avatar: '🚀', rating: 1280, tier: 'Gold', online: true, lastSeen: null },
-    ],
+    friends: [],
     requests: [],
     recent: [],
   });
