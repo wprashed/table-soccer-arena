@@ -67,12 +67,18 @@ export function Profile({ username }: { username: string }) {
               <TierPill rating={user.rating} />
               <span className="chip bg-white/5 text-slate-400">Lv {user.level}</span>
               <span className="chip bg-white/5 text-slate-400">{user.country}</span>
+              <span className="chip bg-emerald-500/15 text-emerald-300 font-bold">
+                {user.position === 'defence' ? '🛡️ Defence' : user.position === 'any' ? '🎲 Any Position' : '⚽ Striker'}
+              </span>
               {isMe && (
-                <Link to="/settings" className="btn btn-ghost px-2 py-1 text-[10px]">
-                  Edit profile
+                <Link to="/settings" className="btn btn-primary px-2.5 py-1 text-[11px] font-bold inline-flex items-center gap-1">
+                  <span>⚙️</span> Edit Profile
                 </Link>
               )}
             </div>
+            {data.profile?.bio && (
+              <p className="mt-1.5 text-xs text-slate-300 italic">"{data.profile.bio}"</p>
+            )}
             <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
               <span className="font-mono text-lg font-black text-white">{user.rating}</span>
               <span>rating</span>

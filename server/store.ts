@@ -841,10 +841,14 @@ export function updateSettings(userId: string, settings: any) {
 
 export function updateProfileFields(
   userId: string,
-  fields: { bio?: string; avatar?: string; country?: string; frame?: string; tableSkin?: string; ballSkin?: string; uniform?: string }
+  fields: { bio?: string; avatar?: string; country?: string; frame?: string; tableSkin?: string; ballSkin?: string; uniform?: string; username?: string; email?: string; preferredPosition?: string; position?: string }
 ) {
+  if (fields.username) db.prepare(`UPDATE users SET username=? WHERE id=?`).run(fields.username.trim().slice(0, 20), userId);
+  if (fields.email) db.prepare(`UPDATE users SET email=? WHERE id=?`).run(fields.email.trim().toLowerCase().slice(0, 100), userId);
   if (fields.avatar) db.prepare(`UPDATE users SET avatar=? WHERE id=?`).run(fields.avatar.slice(0, 8), userId);
   if (fields.country) db.prepare(`UPDATE users SET country=? WHERE id=?`).run(fields.country.toUpperCase().slice(0, 2), userId);
+  const pos = fields.preferredPosition || fields.position;
+  if (pos) db.prepare(`UPDATE users SET position=? WHERE id=?`).run(pos, userId);
   if (fields.bio !== undefined) db.prepare(`UPDATE player_profiles SET bio=? WHERE user_id=?`).run(fields.bio.slice(0, 200), userId);
   if (fields.frame) db.prepare(`UPDATE player_profiles SET frame=? WHERE user_id=?`).run(fields.frame, userId);
   if (fields.tableSkin) db.prepare(`UPDATE player_profiles SET table_skin=? WHERE user_id=?`).run(fields.tableSkin, userId);

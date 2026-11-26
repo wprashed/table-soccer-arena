@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useApp } from './lib/store';
 import { Link, matchRoute, navigate, useLocation } from './lib/router';
@@ -200,79 +200,248 @@ function Routes({ path }: { path: string }) {
 }
 
 function TopBar() {
-  const { user, online, logout } = useApp();
+  const { user, online, logout, soundOn, toggleSound } = useApp();
   const { canInstall, install, isStandalone } = usePwa();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const path = useLocation();
+
+  useEffect(() => {
+    const onMouseDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, []);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [path]);
+
   if (!user) return null;
+
+  const isAdmin = user.role === 'admin' || user.email?.toLowerCase() === 'rashedcse18@gmail.com';
+
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/10 bg-ink-950/80 px-3 py-2 pt-[calc(0.5rem+env(safe-area-inset-top))] backdrop-blur-xl sm:px-5">
-      <Link to="/" className="flex items-center gap-2">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 text-base text-emerald-950 shadow-lg shadow-emerald-500/30">
-          ⚽
-        </span>
-        <span className="hidden text-sm font-black uppercase tracking-[0.18em] text-emerald-300 sm:block">
-          Table Soccer <span className="text-slate-400">Arena</span>
-        </span>
-      </Link>
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-ink-950/85 px-3 py-2.5 pt-[calc(0.6rem+env(safe-area-inset-top))] backdrop-blur-xl sm:px-5">
+      <div className="mx-auto flex max-w-6xl items-center gap-3">
+        {/* Brand */}
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-base text-emerald-950 shadow-md shadow-emerald-500/25 transition group-hover:scale-105">
+            ⚽
+          </span>
+          <div className="flex flex-col">
+            <span className="text-xs sm:text-sm font-black uppercase tracking-[0.18em] text-emerald-300 leading-none">
+              Table Soccer <span className="text-slate-400">Arena</span>
+            </span>
+            <span className="hidden sm:block text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
+              Online 2v2 Foosball
+            </span>
+          </div>
+        </Link>
 
-      <nav className="ml-2 hidden items-center gap-1 md:flex">
-        {NAV.map((n) => (
+        {/* Navigation tabs */}
+        <nav className="ml-3 hidden items-center gap-1 md:flex">
+          {NAV.map((n) => {
+            const active = path === n.to || (n.to !== '/' && path.startsWith(n.to));
+            return (
+              <Link
+                key={n.to}
+                to={n.to}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                  active
+                    ? 'bg-emerald-500/15 text-emerald-300 shadow-sm'
+                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                {n.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Right side tools & Profile */}
+        <div className="ml-auto flex items-center gap-2">
+          {/* Live Online Badge */}
+          <div className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-bold text-emerald-300">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>{online || 1} online</span>
+          </div>
+
+          {/* PWA Install Button */}
+          {canInstall && !isStandalone && (
+            <button
+              onClick={() => install()}
+              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/30 text-xs font-bold text-emerald-300 transition"
+              title="Install Table Soccer Arena app"
+            >
+              <span>📲</span>
+              <span className="text-[11px]">Install</span>
+            </button>
+          )}
+
+          {/* Coin Wallet */}
           <Link
-            key={n.to}
-            to={n.to}
-            className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-300 transition hover:bg-white/5 hover:text-white"
+            to="/store"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/25 text-xs font-black text-amber-300 transition-all hover:scale-[1.02]"
+            title="Coin balance — Visit store"
           >
-            {n.label}
+            <span>🪙</span>
+            <span className="font-mono font-bold">{user.coins.toLocaleString()}</span>
           </Link>
-        ))}
-      </nav>
 
-      <div className="ml-auto flex items-center gap-2">
-        {canInstall && !isStandalone && (
-          <button
-            onClick={() => install()}
-            className="chip border border-emerald-400/40 bg-emerald-500/20 text-emerald-300 font-bold hover:bg-emerald-500/30 transition text-xs"
-            title="Install Table Soccer Arena app"
+          {/* Master Admin shortcut (if admin) */}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-xs font-black text-rose-300 transition hover:scale-[1.02]"
+              title="Admin Dashboard"
+            >
+              <span>🛡️</span>
+              <span className="text-[11px] uppercase tracking-wider">Admin</span>
+            </Link>
+          )}
+
+          {/* Direct Settings Shortcut (Desktop) */}
+          <Link
+            to="/settings"
+            className="btn btn-ghost hidden h-8 w-8 !p-0 text-xs sm:inline-flex rounded-full border border-white/10"
+            title="Settings & Profile"
           >
-            📲 Install
-          </button>
-        )}
-        <span className="chip hidden bg-emerald-500/15 text-emerald-300 sm:inline-flex">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> {online || 1} online
-        </span>
-        <Link to="/store" className="chip bg-amber-400/15 text-amber-300">
-          🪙 {user.coins}
-        </Link>
-        <Link
-          to="/admin"
-          className={`chip border text-xs font-bold transition ${
-            user.role === 'admin' || user.email?.toLowerCase() === 'rashedcse18@gmail.com'
-              ? 'border-rose-500/40 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30'
-              : 'border-white/10 bg-white/5 text-slate-400 hover:text-white'
-          }`}
-          title="Admin Dashboard"
-        >
-          🛡️ Admin
-        </Link>
-        <button onClick={() => sfx.click()} className="hidden sm:block" title="Your rank">
-          <TierPill rating={user.rating} />
-        </button>
-        <Link to={`/player/${user.username}`} className="flex items-center gap-1.5" title="Your profile">
-          <Avatar emoji={user.avatar} size={30} frame={(user as any).frame} />
-        </Link>
-        <Link
-          to="/settings"
-          className="btn btn-ghost hidden h-8 w-8 !p-0 text-xs sm:inline-flex"
-          title="Settings"
-        >
-          ⚙
-        </Link>
-        <button
-          className="btn btn-ghost hidden h-8 px-2 text-[11px] sm:block"
-          onClick={() => logout()}
-          title="Sign out"
-        >
-          Sign out
-        </button>
+            ⚙
+          </Link>
+
+          {/* Unified Player Profile Capsule & Dropdown */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className={`flex items-center gap-2 rounded-full border transition-all ${
+                menuOpen
+                  ? 'border-emerald-400/50 bg-white/[0.08] ring-2 ring-emerald-400/20'
+                  : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20'
+              } p-1 pr-2.5`}
+              title="Player menu & settings"
+            >
+              <Avatar emoji={user.avatar} size={28} frame={(user as any).frame} />
+              <div className="hidden sm:flex flex-col text-left leading-none">
+                <span className="text-xs font-bold text-slate-200 truncate max-w-[90px]">{user.username}</span>
+                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider mt-0.5">
+                  {user.position === 'defence' ? '🛡️ Def' : user.position === 'any' ? '🎲 Flex' : '⚽ Atk'}
+                </span>
+              </div>
+              <div className="hidden md:block">
+                <TierPill rating={user.rating} />
+              </div>
+              <span className={`text-[10px] text-slate-400 transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`}>
+                ▾
+              </span>
+            </button>
+
+            {/* Dropdown Menu */}
+            <AnimatePresence>
+              {menuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 4, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-64 rounded-2xl border border-white/15 bg-ink-950/95 p-2 shadow-2xl backdrop-blur-2xl z-50 divide-y divide-white/[0.08]"
+                >
+                  {/* User identity header */}
+                  <div className="p-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <Avatar emoji={user.avatar} size={36} frame={(user as any).frame} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-sm text-white truncate">{user.username}</span>
+                          <span className="chip text-[9px] py-0 px-1.5 bg-white/10 text-slate-300 uppercase">{user.country}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-400 truncate">{user.email || 'No email attached'}</div>
+                      </div>
+                    </div>
+                    <div className="mt-2.5 flex items-center justify-between text-xs rounded-xl bg-white/[0.04] p-2">
+                      <span className="text-slate-400">Position:</span>
+                      <span className="font-bold text-emerald-300">
+                        {user.position === 'defence' ? '🛡️ Defence (Goalie)' : user.position === 'any' ? '🎲 Any Position' : '⚽ Striker (Attack)'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="py-1.5 space-y-0.5">
+                    <Link
+                      to={`/player/${user.username}`}
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-200 hover:bg-white/10 transition"
+                    >
+                      <span className="text-base">👤</span>
+                      <span>View Player Profile</span>
+                    </Link>
+                    <Link
+                      to="/settings"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-200 hover:bg-white/10 transition"
+                    >
+                      <span className="text-base">⚙️</span>
+                      <span>Profile &amp; Position Settings</span>
+                    </Link>
+                    <Link
+                      to="/store"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-200 hover:bg-white/10 transition"
+                    >
+                      <span className="text-base">🛍️</span>
+                      <span>Skins &amp; Cosmetic Store</span>
+                    </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-bold text-rose-300 hover:bg-rose-500/20 transition"
+                      >
+                        <span className="text-base">🛡️</span>
+                        <span>Admin Dashboard</span>
+                      </Link>
+                    )}
+                  </div>
+
+                  {/* Sound Toggle & Sign Out */}
+                  <div className="pt-1.5 space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => toggleSound()}
+                      className="flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-xs font-bold text-slate-300 hover:bg-white/10 transition"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <span className="text-base">{soundOn ? '🔊' : '🔇'}</span>
+                        <span>Sound Effects</span>
+                      </span>
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${soundOn ? 'bg-emerald-500/20 text-emerald-300' : 'bg-white/10 text-slate-400'}`}>
+                        {soundOn ? 'ON' : 'OFF'}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        logout();
+                      }}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-bold text-rose-400 hover:bg-rose-500/15 transition"
+                    >
+                      <span className="text-base">🚪</span>
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
     </header>
   );

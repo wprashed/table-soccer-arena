@@ -436,29 +436,84 @@ export async function handleMockApi(path: string, method: string, body?: any, to
     if (!currentUser) throw new Error('Unauthorized');
     const users = getUsers();
     const uIdx = users.findIndex((u) => u.id === currentUser.id);
-    if (uIdx >= 0) {
-      if (body.avatar) users[uIdx].avatar = body.avatar;
-      if (body.country) users[uIdx].country = body.country;
-      if (body.preferredPosition) users[uIdx].position = body.preferredPosition;
-      saveUsers(users);
+    if (uIdx < 0) throw new Error('User not found');
+
+    // Update username if requested
+    if (body.username && body.username.trim() !== users[uIdx].username) {
+      const cleanUsername = body.username.trim();
+      if (!/^[a-zA-Z0-9_]{3,20}$/.test(cleanUsername)) {
+        throw new Error('Username must be 3-20 characters and contain only letters, numbers, or underscores');
+      }
+      const taken = users.some((u) => u.id !== currentUser.id && u.username.toLowerCase() === cleanUsername.toLowerCase());
+      if (taken) {
+        throw new Error(`Username "${cleanUsername}" is already taken`);
+      }
+      users[uIdx].username = cleanUsername;
+      currentUser.username = cleanUsername;
     }
+
+    // Update email if requested
+    if (body.email && body.email.trim().toLowerCase() !== (users[uIdx].email || '').toLowerCase()) {
+      const cleanEmail = body.email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        throw new Error('Please enter a valid email address');
+      }
+      const emailTaken = users.some((u) => u.id !== currentUser.id && (u.email || '').toLowerCase() === cleanEmail);
+      if (emailTaken) {
+        throw new Error(`Email "${cleanEmail}" is already registered`);
+      }
+      users[uIdx].email = cleanEmail;
+      currentUser.email = cleanEmail;
+    }
+
+    // Avatar, Country, Position
+    if (body.avatar) {
+      users[uIdx].avatar = body.avatar;
+      currentUser.avatar = body.avatar;
+    }
+    if (body.country) {
+      users[uIdx].country = body.country.toUpperCase().slice(0, 2);
+      currentUser.country = users[uIdx].country;
+    }
+    const pos = body.preferredPosition || body.position;
+    if (pos) {
+      users[uIdx].position = pos;
+      currentUser.position = pos;
+    }
+    saveUsers(users);
+    saveCurrentUser(currentUser);
+
     const profiles = getProfiles();
     if (profiles[currentUser.id]) {
-      if (body.avatar) profiles[currentUser.id].user.avatar = body.avatar;
-      if (body.country) profiles[currentUser.id].user.country = body.country;
-      if (body.bio !== undefined) profiles[currentUser.id].profile.bio = body.bio;
-      if (body.preferredPosition) {
-        profiles[currentUser.id].profile.preferredPosition = body.preferredPosition;
-        profiles[currentUser.id].user.position = body.preferredPosition;
+      profiles[currentUser.id].user = { ...currentUser };
+      if (body.bio !== undefined) profiles[currentUser.id].profile.bio = body.bio.slice(0, 200);
+      if (pos) {
+        profiles[currentUser.id].profile.preferredPosition = pos;
       }
       saveProfiles(profiles);
     }
-    return { ok: true };
+    return { ok: true, user: users[uIdx] };
   }
 
   // 8. UPDATE PASSWORD
   if (normPath === '/account/password' && method === 'POST') {
-    return { ok: true };
+    if (!currentUser) throw new Error('Unauthorized');
+    const users = getUsers();
+    const uIdx = users.findIndex((u) => u.id === currentUser.id);
+    if (uIdx < 0) throw new Error('User not found');
+
+    const { current, next } = body || {};
+    if (users[uIdx].password && current !== users[uIdx].password) {
+      throw new Error('Current password is incorrect');
+    }
+    if (!next || next.length < 6) {
+      throw new Error('New password must be at least 6 characters');
+    }
+
+    users[uIdx].password = next;
+    saveUsers(users);
+    logAudit('PASSWORD_CHANGED', `User ${users[uIdx].username} updated their password`, currentUser.id);
+    return { ok: true, message: 'Password updated successfully' };
   }
 
   // 9. STORE
