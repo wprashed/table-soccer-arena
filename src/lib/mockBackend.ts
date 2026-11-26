@@ -640,14 +640,66 @@ export async function handleMockApi(path: string, method: string, body?: any, to
 
   // 16. FRIENDS
   if (normPath === '/friends') {
+    const users = getUsers().filter((u) => u.id !== currentUser?.id);
+    const defaultFriends = users.slice(0, 3).map((u) => ({
+      id: u.id,
+      username: u.username,
+      avatar: u.avatar || '⚽',
+      rating: u.rating || 1000,
+      tier: tierFor(u.rating || 1000).tier,
+      online: true,
+      lastSeen: null,
+    }));
     return {
-      friends: [
-        { id: 'usr_sam', username: 'SamRocket', avatar: '🚀', rating: 1280, tier: 'Gold', online: false, lastSeen: '2h ago' },
+      friends: defaultFriends.length > 0 ? defaultFriends : [
+        { id: 'usr_sam', username: 'SamRocket', avatar: '🚀', rating: 1280, tier: 'Gold', online: true, lastSeen: null },
       ],
+      requests: [],
       incoming: [],
       outgoing: [],
       recent: [],
     };
+  }
+
+  if (normPath === '/friends/request' && method === 'POST') {
+    const { username } = body || {};
+    const users = getUsers();
+    const target = users.find((u) => u.username?.toLowerCase() === username?.toLowerCase());
+    if (!target) {
+      throw new Error('User not found');
+    }
+    return { ok: true, message: 'Friend request sent' };
+  }
+
+  if (normPath === '/friends/respond' && method === 'POST') {
+    return { ok: true };
+  }
+
+  if (normPath.startsWith('/friends/') && method === 'DELETE') {
+    return { ok: true };
+  }
+
+  if (normPath.startsWith('/users/') && normPath.endsWith('/block') && method === 'POST') {
+    return { ok: true };
+  }
+
+  if (normPath.startsWith('/users/') && normPath.endsWith('/report') && method === 'POST') {
+    const parts = normPath.split('/');
+    const targetUserId = parts[2];
+    const { reason, details } = body || {};
+    const reports = getReports();
+    reports.unshift({
+      id: Date.now(),
+      targetUserId,
+      targetUsername: getUsers().find((u) => u.id === targetUserId)?.username || 'Unknown',
+      reportedBy: currentUser?.username || 'anonymous',
+      reason: reason || 'abuse',
+      details: details || '',
+      status: 'open',
+      createdAt: new Date().toISOString(),
+    });
+    saveReports(reports);
+    return { ok: true };
   }
 
   // 17. ADMIN OVERVIEW

@@ -16,7 +16,13 @@ interface SocialData {
 
 export function Social() {
   const { toast, refresh } = useApp();
-  const [data, setData] = useState<SocialData | null>(null);
+  const [data, setData] = useState<SocialData>({
+    friends: [
+      { id: 'usr_sam', username: 'SamRocket', avatar: '🚀', rating: 1280, tier: 'Gold', online: true, lastSeen: null },
+    ],
+    requests: [],
+    recent: [],
+  });
   const [username, setUsername] = useState('');
   const [busy, setBusy] = useState(false);
   const [inviteBusy, setInviteBusy] = useState(false);
@@ -26,7 +32,18 @@ export function Social() {
   const [reportDetails, setReportDetails] = useState('');
 
   const load = () =>
-    api.get<SocialData>('/friends').then(setData).catch((e) => toast(e.message, 'error'));
+    api
+      .get<SocialData>('/friends')
+      .then((d) => {
+        if (d) {
+          setData({
+            friends: d.friends ?? [],
+            requests: d.requests ?? (d as any).incoming ?? [],
+            recent: d.recent ?? [],
+          });
+        }
+      })
+      .catch((e) => toast(e.message, 'error'));
 
   useEffect(() => {
     load();
@@ -117,13 +134,9 @@ export function Social() {
     }
   };
 
-  if (!data) {
-    return (
-      <div className="grid place-items-center py-20">
-        <Spinner size={26} />
-      </div>
-    );
-  }
+  const friends = data?.friends ?? [];
+  const requests = data?.requests ?? [];
+  const recent = data?.recent ?? [];
 
   return (
     <div className="space-y-4">
@@ -159,13 +172,13 @@ export function Social() {
         </div>
       </div>
 
-      {data.requests.length > 0 && (
+      {requests.length > 0 && (
         <div className="glass rounded-2xl p-4">
           <h2 className="mb-2 text-sm font-black uppercase tracking-widest text-slate-300">
-            Requests ({data.requests.length})
+            Requests ({requests.length})
           </h2>
           <div className="space-y-2">
-            {data.requests.map((r) => (
+            {requests.map((r) => (
               <div key={r.requestId} className="flex items-center gap-2 rounded-xl bg-white/[0.05] p-2">
                 <Avatar emoji={r.avatar} size={30} />
                 <div className="flex-1">
@@ -187,13 +200,13 @@ export function Social() {
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="glass rounded-2xl p-4">
           <h2 className="mb-2 text-sm font-black uppercase tracking-widest text-slate-300">
-            Friends ({data.friends.length})
+            Friends ({friends.length})
           </h2>
-          {data.friends.length === 0 ? (
+          {friends.length === 0 ? (
             <Empty icon="👥" title="No friends yet" hint="Search a username above" />
           ) : (
             <div className="space-y-1.5">
-              {data.friends.map((f) => (
+              {friends.map((f) => (
                 <div key={f.id} className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-white/[0.05]">
                   <div className="relative">
                     <Avatar emoji={f.avatar} size={32} />
@@ -228,11 +241,11 @@ export function Social() {
 
         <div className="glass rounded-2xl p-4">
           <h2 className="mb-2 text-sm font-black uppercase tracking-widest text-slate-300">Recent opponents</h2>
-          {data.recent.length === 0 ? (
+          {recent.length === 0 ? (
             <Empty icon="🎮" title="No recent opponents" />
           ) : (
             <div className="space-y-1.5">
-              {data.recent.map((r) => (
+              {recent.map((r) => (
                 <div key={r.id} className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-white/[0.05]">
                   <Avatar emoji={r.avatar} size={30} />
                   <div className="min-w-0 flex-1">
