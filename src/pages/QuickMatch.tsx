@@ -5,6 +5,7 @@ import { getSocket, request } from '../lib/socket';
 import { useApp } from '../lib/store';
 import { navigate } from '../lib/router';
 import { Avatar, Spinner } from '../components/ui';
+import { InviteModal } from '../components/InviteModal';
 import type { MatchView } from '../../shared/types';
 import { sfx } from '../lib/sfx';
 
@@ -23,6 +24,38 @@ export function QuickMatch() {
     (user as any)?.position || 'striker'
   );
   const [matched, setMatched] = useState<{ matchId: string; view: MatchView } | null>(null);
+  const [inviteModalData, setInviteModalData] = useState<{ open: boolean; code: string; matchId?: string } | null>(null);
+  const [shareBusy, setShareBusy] = useState(false);
+
+  const handleShareGame = async () => {
+    setShareBusy(true);
+    try {
+      const res = await request<any>('room:create', { rated: true });
+      if (!res?.ok) throw new Error(res?.error ?? 'Could not create room');
+      const code = res.code || res.roomCode;
+      setInviteModalData({
+        open: true,
+        code,
+        matchId: res.matchId,
+      });
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const pathname = typeof window !== 'undefined' ? window.location.pathname.replace(/\/$/, '') : '';
+      const inviteUrl = `${origin}${pathname}/?join=${code}`;
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Table Soccer Arena Match',
+            text: `⚽ Join my 2v2 Table Soccer match! Room Code: ${code}`,
+            url: inviteUrl,
+          });
+        } catch {}
+      }
+    } catch (e: any) {
+      toast(e.message, 'error');
+    } finally {
+      setShareBusy(false);
+    }
+  };
 
   const changePosition = (next: 'striker' | 'defence' | 'any') => {
     setPosition(next);
@@ -201,9 +234,20 @@ export function QuickMatch() {
                     </div>
                   </>
                 ) : (
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <div className="h-6 w-6 rounded-full bg-white/5" />
-                    Open slot
+                  <div className="flex w-full items-center justify-between gap-2 text-xs text-slate-500">
+                    <div className="flex items-center gap-2">
+                      <div className="grid h-6 w-6 place-items-center rounded-full border border-dashed border-emerald-400/40 bg-emerald-500/10 text-[11px] font-bold text-emerald-400">
+                        +
+                      </div>
+                      <span>Open slot</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleShareGame}
+                      className="rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-2.5 py-1 text-[10px] font-bold text-emerald-300 hover:bg-emerald-500/25 transition"
+                    >
+                      + Invite friend
+                    </button>
                   </div>
                 )}
               </div>
@@ -216,10 +260,38 @@ export function QuickMatch() {
           server fills the empty seats with bots — that match is casual and does not change your rating.
         </div>
 
-        <button className="btn btn-ghost mt-4 w-full py-2.5" onClick={cancel}>
-          Cancel search
-        </button>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={handleShareGame}
+            disabled={shareBusy}
+            className="btn btn-primary flex-1 py-3 text-xs font-black inline-flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/25"
+          >
+            {shareBusy ? <Spinner size={16} /> : '📤'} Share Game & Invite Friends
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost py-3 px-4 text-xs font-bold"
+            onClick={cancel}
+          >
+            Cancel search
+          </button>
+        </div>
       </motion.div>
+
+      {inviteModalData && (
+        <InviteModal
+          open={inviteModalData.open}
+          onClose={() => setInviteModalData(null)}
+          code={inviteModalData.code}
+          matchId={inviteModalData.matchId}
+          title="Invite Friends to Play"
+          subtitle="Share this match link or room code so others can join you directly!"
+          onEnterRoom={
+            inviteModalData.matchId ? () => navigate(`/match/${inviteModalData.matchId}`) : undefined
+          }
+        />
+      )}
     </div>
   );
 }
