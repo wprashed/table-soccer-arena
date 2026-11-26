@@ -190,8 +190,7 @@ export function ToastHost() {
   const { toasts, dismiss } = useApp();
   return (
     <div
-      className="pointer-events-none fixed left-1/2 z-[60] flex w-full max-w-sm -translate-x-1/2 flex-col-reverse gap-2 px-3"
-      style={{ bottom: 'calc(4.75rem + env(safe-area-inset-bottom))' }}
+      className="pointer-events-none fixed left-1/2 z-[60] flex w-full max-w-sm -translate-x-1/2 flex-col-reverse gap-2 px-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] md:bottom-6"
     >
       <AnimatePresence>
         {toasts.map((t) => (

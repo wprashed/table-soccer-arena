@@ -459,7 +459,21 @@ export function Dashboard() {
           </Link>
         </div>
         {matchHistory.length === 0 ? (
-          <Empty icon="🎮" title="No matches yet" hint="Hit Play Now to jump into your first 2v2" />
+          <div className="grid place-items-center gap-2 rounded-xl border border-dashed border-white/10 bg-white/[0.02] py-6 px-4 text-center">
+            <div className="text-3xl opacity-70">🎮</div>
+            <div>
+              <div className="font-bold text-slate-200">No matches yet</div>
+              <div className="mt-0.5 text-xs text-slate-400">
+                Play your first 2v2 match to establish your Elo rating and match history.
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/play/quick')}
+              className="btn btn-primary mt-1 px-4 py-2 text-xs font-bold inline-flex items-center gap-1.5"
+            >
+              <span>⚡</span> Play Ranked Match
+            </button>
+          </div>
         ) : (
           <div className="scroll-thin overflow-x-auto">
             <div className="divide-y divide-white/[0.06]">

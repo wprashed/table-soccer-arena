@@ -153,10 +153,7 @@ export default function App() {
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col">
       <TopBar />
-      <main
-        className="page-safe flex-1 pb-24 pt-3 sm:pb-8"
-        style={{ paddingBottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
-      >
+      <main className="page-safe flex-1 pt-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-8">
         <AnimatePresence mode="wait">
           <motion.div
             key={path}
