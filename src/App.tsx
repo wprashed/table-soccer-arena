@@ -227,30 +227,22 @@ function TopBar() {
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-ink-950/85 px-3 py-2.5 pt-[calc(0.6rem+env(safe-area-inset-top))] backdrop-blur-xl sm:px-5">
       <div className="mx-auto flex max-w-6xl items-center gap-3">
-        {/* Brand */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-base text-emerald-950 shadow-md shadow-emerald-500/25 transition group-hover:scale-105">
+        {/* Brand: football logo only */}
+        <Link to="/" className="flex items-center group shrink-0" title="Table Soccer Arena">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-lg text-emerald-950 shadow-md shadow-emerald-500/30 transition group-hover:scale-105">
             ⚽
           </span>
-          <div className="flex flex-col">
-            <span className="text-xs sm:text-sm font-black uppercase tracking-[0.18em] text-emerald-300 leading-none">
-              Table Soccer <span className="text-slate-400">Arena</span>
-            </span>
-            <span className="hidden sm:block text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
-              Online 2v2 Foosball
-            </span>
-          </div>
         </Link>
 
         {/* Navigation tabs */}
-        <nav className="ml-3 hidden items-center gap-1 md:flex">
+        <nav className="ml-3 hidden items-center gap-1 md:flex shrink-0">
           {NAV.map((n) => {
             const active = path === n.to || (n.to !== '/' && path.startsWith(n.to));
             return (
               <Link
                 key={n.to}
                 to={n.to}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
                   active
                     ? 'bg-emerald-500/15 text-emerald-300 shadow-sm'
                     : 'text-slate-300 hover:bg-white/5 hover:text-white'
@@ -263,21 +255,21 @@ function TopBar() {
         </nav>
 
         {/* Right side tools & Profile */}
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 shrink-0">
           {/* Live Online Badge */}
-          <div className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-bold text-emerald-300">
-            <span className="relative flex h-2 w-2">
+          <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-bold text-emerald-300 whitespace-nowrap shrink-0">
+            <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span>{online || 1} online</span>
+            <span className="whitespace-nowrap">{online || 1} online</span>
           </div>
 
           {/* PWA Install Button */}
           {canInstall && !isStandalone && (
             <button
               onClick={() => install()}
-              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/30 text-xs font-bold text-emerald-300 transition"
+              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/30 text-xs font-bold text-emerald-300 transition whitespace-nowrap shrink-0"
               title="Install Table Soccer Arena app"
             >
               <span>📲</span>
@@ -288,7 +280,7 @@ function TopBar() {
           {/* Coin Wallet */}
           <Link
             to="/store"
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/25 text-xs font-black text-amber-300 transition-all hover:scale-[1.02]"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/25 text-xs font-black text-amber-300 transition-all hover:scale-[1.02] whitespace-nowrap shrink-0"
             title="Coin balance — Visit store"
           >
             <span>🪙</span>
@@ -299,7 +291,7 @@ function TopBar() {
           {isAdmin && (
             <Link
               to="/admin"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-xs font-black text-rose-300 transition hover:scale-[1.02]"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-xs font-black text-rose-300 transition hover:scale-[1.02] whitespace-nowrap shrink-0"
               title="Admin Dashboard"
             >
               <span>🛡️</span>
@@ -310,14 +302,14 @@ function TopBar() {
           {/* Direct Settings Shortcut (Desktop) */}
           <Link
             to="/settings"
-            className="btn btn-ghost hidden h-8 w-8 !p-0 text-xs sm:inline-flex rounded-full border border-white/10"
+            className="btn btn-ghost hidden h-8 w-8 !p-0 text-xs sm:inline-flex rounded-full border border-white/10 shrink-0"
             title="Settings & Profile"
           >
             ⚙
           </Link>
 
           {/* Unified Player Profile Capsule & Dropdown */}
-          <div className="relative" ref={menuRef}>
+          <div className="relative shrink-0" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className={`flex items-center gap-2 rounded-full border transition-all ${
