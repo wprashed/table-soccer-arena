@@ -284,10 +284,10 @@ export function AuthPage() {
                   type="button"
                   onClick={async () => {
                     setEmail('rashedcse18@gmail.com');
-                    setPassword('password123');
+                    setPassword('Wprashed@125#');
                     setBusy(true);
                     try {
-                      await login('rashedcse18@gmail.com', 'password123');
+                      await login('rashedcse18@gmail.com', 'Wprashed@125#');
                       toast('Signed in as Master Admin (rashedcse18@gmail.com)', 'success');
                       navigate('/admin');
                     } catch (e: any) {

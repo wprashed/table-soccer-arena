@@ -92,7 +92,7 @@ export function Admin() {
             <button
               onClick={async () => {
                 try {
-                  await login('rashedcse18@gmail.com', 'password123');
+                  await login('rashedcse18@gmail.com', 'Wprashed@125#');
                   toast('Switched to Designated Admin (rashedcse18@gmail.com)', 'success');
                   await refresh();
                 } catch (e: any) {

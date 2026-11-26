@@ -60,12 +60,13 @@ function initStorage() {
       coins: 5000,
       role: 'admin',
       email: 'rashedcse18@gmail.com',
-      password: 'password123',
+      password: 'Wprashed@125#',
       createdAt: '2026-11-20T08:00:00Z',
     };
     users = [rashed];
   } else {
     rashed.role = 'admin';
+    rashed.password = 'Wprashed@125#';
   }
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
 
@@ -360,7 +361,7 @@ export async function handleMockApi(path: string, method: string, body?: any, to
         id: demoId,
         email: email.toLowerCase(),
         username: demoUsername,
-        password: password || 'password123',
+        password: password || 'Wprashed@125#',
         avatar: '👑',
         country: 'BD',
         rating: 1650,
