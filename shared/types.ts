@@ -1,6 +1,8 @@
 /** Shared API/DTO types used by client and server. */
 import type { Team } from './engine/constants';
 
+export type PlayerPosition = 'striker' | 'defence' | 'any';
+
 export interface PublicUser {
   id: string;
   username: string;
@@ -12,6 +14,7 @@ export interface PublicUser {
   xp: number;
   coins: number;
   frame?: string;
+  position?: PlayerPosition;
   online?: boolean;
 }
 
@@ -35,6 +38,7 @@ export interface ProfileCosmetics {
   ballSkin: string;
   uniform: string;
   celebration: string;
+  preferredPosition?: PlayerPosition;
   dailyStreak: number;
   lastDailyClaim: string | null;
 }
@@ -106,6 +110,7 @@ export interface MatchPlayerView {
   avatar: string;
   team: Team;
   slot: number;
+  position?: 'striker' | 'defence';
   rating: number;
   online: boolean;
 }

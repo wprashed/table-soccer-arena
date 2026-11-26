@@ -8,13 +8,14 @@ import { Spinner } from '../components/ui';
 export function Practice() {
   const { toast, user } = useApp();
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
-  const [solo, setSolo] = useState(true);
+  const [solo, setSolo] = useState(false);
+  const [position, setPosition] = useState<'striker' | 'defence'>('striker');
   const [busy, setBusy] = useState(false);
 
   const start = async () => {
     setBusy(true);
     try {
-      const res = await request<any>('practice:start', { difficulty, solo });
+      const res = await request<any>('practice:start', { difficulty, solo, position });
       if (!res?.ok) throw new Error(res?.error ?? 'Could not start practice');
       navigate(`/match/${res.matchId}`);
     } catch (e: any) {
@@ -35,8 +36,8 @@ export function Practice() {
 
         <div className="mt-4 grid grid-cols-2 gap-2">
           {[
-            { v: true, label: 'Solo drill', hint: 'You control all 4 rods' },
             { v: false, label: 'Real 2v2', hint: 'You + a bot teammate' },
+            { v: true, label: 'Solo drill', hint: 'You control all 4 rods' },
           ].map((o) => (
             <button
               key={String(o.v)}
@@ -50,6 +51,40 @@ export function Practice() {
             </button>
           ))}
         </div>
+
+        {!solo && (
+          <div className="mt-4">
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                Your Position
+              </label>
+              <span className="text-[10px] text-emerald-400 font-bold">
+                {position === 'striker' ? 'Attack & Midfield' : 'Goalie & Defense'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { id: 'striker' as const, label: '⚽ Striker', rods: '3-bar Attack & 5-bar Midfield', desc: 'Score goals & control passing' },
+                { id: 'defence' as const, label: '🛡️ Defence', rods: '1-bar Goalie & 2-bar Defense', desc: 'Block shots & protect the net' },
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setPosition(p.id)}
+                  className={`rounded-xl p-3 text-left transition ${
+                    position === p.id
+                      ? 'bg-emerald-500/25 ring-1 ring-emerald-400 text-white'
+                      : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                  }`}
+                >
+                  <div className="text-xs font-black">{p.label}</div>
+                  <div className="mt-0.5 text-[10px] font-semibold text-emerald-300/90">{p.rods}</div>
+                  <div className="mt-0.5 text-[9px] text-slate-400">{p.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="mt-4 grid grid-cols-3 gap-2">
           {(['easy', 'normal', 'hard'] as const).map((d) => (
             <button

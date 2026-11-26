@@ -22,6 +22,7 @@ interface QueuePlayer extends QueueEntry {
   username: string;
   avatar: string;
   allowBots: boolean;
+  position?: 'striker' | 'defence' | 'any';
 }
 
 export function attachRealtime(io: Server, manager: MatchManager) {
@@ -307,10 +308,14 @@ export function attachRealtime(io: Server, manager: MatchManager) {
     });
 
     // ---------------------------------------------------------- matchmaking
-    socket.on('queue:join', ({ token, allowBots }: any, ack?: Function) => {
+    socket.on('queue:join', ({ token, allowBots, position }: any, ack?: Function) => {
       const u = resolveCaller(token);
       if (!u) return ack?.({ ok: false, error: 'Sign in to play ranked' });
-      if (!queue.some((q) => q.userId === u.id)) {
+      const pos = position || 'striker';
+      const existing = queue.find((q) => q.userId === u.id);
+      if (existing) {
+        existing.position = pos;
+      } else {
         queue.push({
           userId: u.id,
           socketId: socket.id,
@@ -320,11 +325,33 @@ export function attachRealtime(io: Server, manager: MatchManager) {
           joinedAt: Date.now(),
           latency: 40,
           allowBots: allowBots !== false,
+          position: pos,
         });
       }
       socket.join('queue');
       ack?.({ ok: true, queue: queueView() });
       emitQueue();
+    });
+
+    socket.on('match:swap_position', ({ matchId }: any) => {
+      const m = manager.matches.get(String(matchId));
+      if (!m || m.mode !== 'practice') return;
+      const u = resolveCaller();
+      if (!u) return;
+      const mySeat = m.seats.find((s) => s.userId === u.id);
+      const botSeat = m.seats.find((s) => s.team === 'A' && s.userId !== u.id);
+      if (mySeat && botSeat) {
+        const oldMySlot = mySeat.slot;
+        mySeat.slot = botSeat.slot;
+        botSeat.slot = oldMySlot;
+        botSeat.bot = createBot(botSeat.slot, { skill: 0.65 });
+        m.seats.sort((a, b) => a.slot - b.slot);
+        io.to(`match:${m.id}`).emit('match:position_swapped', {
+          matchId: m.id,
+          newSlot: mySeat.slot,
+          view: manager.view(m),
+        });
+      }
     });
 
     socket.on('queue:leave', (_p: any, ack?: Function) => {
@@ -403,27 +430,40 @@ export function attachRealtime(io: Server, manager: MatchManager) {
      *  solo  -> the caller drives all four seats (their own two rods + bots elsewhere)
      *  2v2   -> the caller takes seat 0 and bots fill the rest
      */
-    socket.on('practice:start', ({ token, difficulty, solo }: any, ack?: Function) => {
+    socket.on('practice:start', ({ token, difficulty, solo, position }: any, ack?: Function) => {
       const u = resolveCaller(token);
       const skill = difficulty === 'easy' ? 0.32 : difficulty === 'hard' ? 0.86 : 0.6;
+      const playerSlot = position === 'defence' ? 0 : 1;
+      const botSlot = playerSlot === 0 ? 1 : 0;
       const m = manager.create({
         mode: 'practice',
         rated: false,
         goalsToWin: 5,
         timeLimitSec: 240,
         seats: u
-          ? [{ userId: u.id, username: u.username, avatar: '⚽', rating: 1000, team: 'A', slot: 0 }]
+          ? [{ userId: u.id, username: u.username, avatar: '⚽', rating: 1000, team: 'A', slot: playerSlot }]
           : [],
       });
       const taken = new Set(m.seats.map((s) => s.slot));
       if (!solo) {
         if (u) {
           m.seats.push({
-            userId: `bot_${m.id}_1`, username: 'Bot Mate', avatar: '🤖', rating: 1000,
-            team: 'A', slot: 1, connected: true, lockedUntil: 0, disconnectAt: null,
-            goals: 0, touches: 0, shots: 0, isBot: true, bot: createBot(1, { skill }),
+            userId: `bot_${m.id}_${botSlot}`,
+            username: botSlot === 0 ? 'Bot Defender' : 'Bot Striker',
+            avatar: botSlot === 0 ? '🛡️' : '⚽',
+            rating: 1000,
+            team: 'A',
+            slot: botSlot,
+            connected: true,
+            lockedUntil: 0,
+            disconnectAt: null,
+            goals: 0,
+            touches: 0,
+            shots: 0,
+            isBot: true,
+            bot: createBot(botSlot, { skill }),
           });
-          taken.add(1);
+          taken.add(botSlot);
         }
         [2, 3].forEach((slot) => {
           if (!taken.has(slot)) manager.addBot(m, slot, 'B', skill, slot === 2 ? 'Bot Rex' : 'Bot Mira');
@@ -435,7 +475,8 @@ export function attachRealtime(io: Server, manager: MatchManager) {
       ack?.({
         ok: true,
         matchId: m.id,
-        slot: 0,
+        slot: playerSlot,
+        seat: playerSlot,
         solo: !!solo,
         view: manager.view(m),
       });

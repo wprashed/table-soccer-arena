@@ -193,11 +193,44 @@ export function Dashboard() {
 
           <button
             onClick={quickMatch}
-            className="btn btn-primary pulse-ring group relative mb-3 w-full overflow-hidden py-5 text-lg"
+            className="btn btn-primary pulse-ring group relative mb-2 w-full overflow-hidden py-4 text-lg font-black"
           >
             <span className="text-2xl">▶</span> PLAY NOW
             <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
           </button>
+
+          {/* Quick Position Selector */}
+          <div className="mb-3.5 flex items-center justify-between rounded-xl border border-white/10 bg-black/25 px-3 py-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Position</span>
+            <div className="flex gap-1">
+              {[
+                { id: 'striker' as const, label: '⚽ Striker', title: 'Attack (3-bar & 5-bar)' },
+                { id: 'defence' as const, label: '🛡️ Defence', title: 'Goalie (1-bar & 2-bar)' },
+              ].map((p) => {
+                const currentPos = (profile?.profile as any)?.preferredPosition ?? 'striker';
+                const active = currentPos === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      api.patch('/profile', { preferredPosition: p.id }).catch(() => {});
+                      refresh();
+                    }}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                      active
+                        ? 'bg-emerald-500 text-emerald-950 font-black shadow-sm'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    }`}
+                    title={p.title}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="mb-4 text-center text-[11px] text-slate-500">
             Ranked 2v2 quick match · Elo on the line
           </div>

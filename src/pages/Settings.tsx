@@ -24,6 +24,9 @@ export function Settings() {
   const [avatar, setAvatar] = useState(user?.avatar ?? '⚽');
   const [country, setCountry] = useState(user?.country ?? 'BD');
   const [bio, setBio] = useState('');
+  const [preferredPosition, setPreferredPosition] = useState<'striker' | 'defence' | 'any'>(
+    (profile as any)?.profile?.preferredPosition ?? 'striker'
+  );
   const [bindings, setBindings] = useState(loadBindings());
   const [listening, setListening] = useState<Action | null>(null);
   const [pw, setPw] = useState({ current: '', next: '' });
@@ -36,6 +39,9 @@ export function Settings() {
   useEffect(() => {
     if (!profile) return;
     setBio((profile as any).profile?.bio ?? '');
+    if ((profile as any).profile?.preferredPosition) {
+      setPreferredPosition((profile as any).profile.preferredPosition);
+    }
   }, [profile]);
 
   useEffect(() => {
@@ -57,7 +63,7 @@ export function Settings() {
   const saveProfile = async () => {
     setBusy(true);
     try {
-      await api.patch('/profile', { avatar, country, bio });
+      await api.patch('/profile', { avatar, country, bio, preferredPosition });
       await refresh();
       toast('Profile updated', 'success');
     } catch (e: any) {
@@ -149,6 +155,35 @@ export function Settings() {
               </button>
             </div>
           </div>
+          <div>
+            <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-500">
+              Preferred Match Position
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'striker' as const, label: '⚽ Striker', desc: 'Attack (3-bar & 5-bar)' },
+                { id: 'defence' as const, label: '🛡️ Defence', desc: 'Goalie (1-bar & 2-bar)' },
+                { id: 'any' as const, label: '🎲 Any Role', desc: 'Flexible / Fill' },
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setPreferredPosition(p.id)}
+                  className={`rounded-xl p-2.5 text-left transition ${
+                    preferredPosition === p.id
+                      ? 'bg-emerald-500 text-emerald-950 font-black ring-1 ring-emerald-300'
+                      : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                  }`}
+                >
+                  <div className="text-xs font-black">{p.label}</div>
+                  <div className={`text-[9px] ${preferredPosition === p.id ? 'text-emerald-900 font-bold' : 'text-slate-400'}`}>
+                    {p.desc}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-500">Bio</label>
             <textarea className="input min-h-[70px]" maxLength={200} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell opponents who you are" />

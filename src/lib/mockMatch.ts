@@ -3,6 +3,7 @@
  *
  * Runs the authoritative foosball physics engine and AI bots directly inside the
  * browser so that Quick Match, Solo Practice, and 2v2 bot drills work with zero latency.
+ * Supports choosing and dynamically swapping player position (Striker vs Defence).
  */
 import {
   createSimState,
@@ -14,7 +15,7 @@ import {
 } from '../../shared/engine/physics';
 import { createBot } from '../../shared/engine/bot';
 import { MATCH, type Team } from '../../shared/engine/constants';
-import type { MatchView, PublicUser } from '../../shared/types';
+import type { MatchView, PublicUser, PlayerPosition } from '../../shared/types';
 import { getMockSessionUser, recordMockMatchResult } from './mockBackend';
 
 interface LocalMatch {
@@ -22,6 +23,7 @@ interface LocalMatch {
   mode: 'quick' | 'practice';
   solo: boolean;
   difficulty: 'easy' | 'normal' | 'hard';
+  playerSlot: number; // 0 = defence, 1 = striker
   sim: SimState;
   bots: Record<number, (s: SimState) => SimPlayerInput>;
   user: PublicUser;
@@ -48,6 +50,7 @@ export function createLocalMatch(opts: {
   mode?: 'quick' | 'practice';
   solo?: boolean;
   difficulty?: 'easy' | 'normal' | 'hard';
+  position?: PlayerPosition;
   user?: PublicUser;
 }): LocalMatch {
   const mode = opts.mode || 'practice';
@@ -66,6 +69,11 @@ export function createLocalMatch(opts: {
     coins: 100,
   };
 
+  // Determine slot: position 'defence' -> slot 0; 'striker' (default) -> slot 1
+  const preferredPos = opts.position || user.position || 'striker';
+  const playerSlot = preferredPos === 'defence' ? 0 : 1;
+  const botSlot = playerSlot === 0 ? 1 : 0;
+
   const sim = createSimState({
     goalsToWin: mode === 'practice' && solo ? 5 : 10,
     timeLimitSec: mode === 'practice' ? 300 : 360,
@@ -79,25 +87,45 @@ export function createLocalMatch(opts: {
     bots[2] = createBot(2, { skill, seed: 102 });
     bots[3] = createBot(3, { skill, seed: 103 });
   } else {
-    // In 2v2: player is slot 0 (Team A goalie/midfield)
-    // Slot 1 is teammate bot
-    // Slots 2 & 3 are opposing bots
-    bots[1] = createBot(1, { skill, seed: 101 });
+    // In 2v2: player is in playerSlot, teammate bot is in botSlot
+    bots[botSlot] = createBot(botSlot, { skill, seed: 101 });
     bots[2] = createBot(2, { skill, seed: 102 });
     bots[3] = createBot(3, { skill, seed: 103 });
   }
+
+  const teamAPlayers = [
+    {
+      id: 'p0',
+      userId: playerSlot === 0 ? user.id : 'bot_teammate',
+      username: playerSlot === 0 ? user.username : 'Bot Defender',
+      avatar: playerSlot === 0 ? user.avatar : '🛡️',
+      team: 'A' as Team,
+      slot: 0,
+      position: 'defence' as const,
+      rating: user.rating,
+      online: true,
+    },
+    {
+      id: 'p1',
+      userId: playerSlot === 1 ? user.id : 'bot_teammate',
+      username: playerSlot === 1 ? user.username : 'Bot Striker',
+      avatar: playerSlot === 1 ? user.avatar : '⚽',
+      team: 'A' as Team,
+      slot: 1,
+      position: 'striker' as const,
+      rating: user.rating,
+      online: true,
+    },
+  ];
 
   const view: MatchView = {
     id,
     mode: mode === 'quick' ? 'quick' : 'practice',
     phase: 'countdown',
-    teamA: [
-      { id: 'p0', userId: user.id, username: user.username, avatar: user.avatar, team: 'A', slot: 0, rating: user.rating, online: true },
-      { id: 'p1', userId: 'bot_teammate', username: solo ? 'Drill Mode' : 'Bot Teammate', avatar: '🤖', team: 'A', slot: 1, rating: user.rating, online: true },
-    ],
+    teamA: teamAPlayers,
     teamB: [
-      { id: 'p2', userId: 'bot_rival1', username: 'Bot Striker', avatar: '🦈', team: 'B', slot: 2, rating: user.rating + 20, online: true },
-      { id: 'p3', userId: 'bot_rival2', username: 'Bot Keeper', avatar: '🔥', team: 'B', slot: 3, rating: user.rating - 15, online: true },
+      { id: 'p2', userId: 'bot_rival1', username: 'Bot Striker', avatar: '🦈', team: 'B', slot: 2, position: 'striker', rating: user.rating + 20, online: true },
+      { id: 'p3', userId: 'bot_rival2', username: 'Bot Keeper', avatar: '🔥', team: 'B', slot: 3, position: 'defence', rating: user.rating - 15, online: true },
     ],
     score: { A: 0, B: 0 },
     goalsToWin: mode === 'practice' && solo ? 5 : 10,
@@ -112,6 +140,7 @@ export function createLocalMatch(opts: {
     mode,
     solo,
     difficulty,
+    playerSlot,
     sim,
     bots,
     user,
@@ -125,6 +154,52 @@ export function createLocalMatch(opts: {
 
   activeMatches[id] = match;
   return match;
+}
+
+export function swapLocalMatchPosition(matchId: string, socket?: any): number {
+  const match = activeMatches[matchId];
+  if (!match || match.solo) return match?.playerSlot ?? 0;
+
+  const oldSlot = match.playerSlot;
+  const newSlot = oldSlot === 0 ? 1 : 0;
+  match.playerSlot = newSlot;
+
+  // Swap teammate bot to the other slot
+  const skill = match.difficulty === 'hard' ? 0.85 : match.difficulty === 'easy' ? 0.4 : 0.65;
+  delete match.bots[newSlot];
+  match.bots[oldSlot] = createBot(oldSlot, { skill, seed: 101 + oldSlot });
+
+  // Update view
+  match.view.teamA = [
+    {
+      id: 'p0',
+      userId: newSlot === 0 ? match.user.id : 'bot_teammate',
+      username: newSlot === 0 ? match.user.username : 'Bot Defender',
+      avatar: newSlot === 0 ? match.user.avatar : '🛡️',
+      team: 'A',
+      slot: 0,
+      position: 'defence',
+      rating: match.user.rating,
+      online: true,
+    },
+    {
+      id: 'p1',
+      userId: newSlot === 1 ? match.user.id : 'bot_teammate',
+      username: newSlot === 1 ? match.user.username : 'Bot Striker',
+      avatar: newSlot === 1 ? match.user.avatar : '⚽',
+      team: 'A',
+      slot: 1,
+      position: 'striker',
+      rating: match.user.rating,
+      online: true,
+    },
+  ];
+
+  if (socket) {
+    socket.emit('match:position_swapped', { matchId, newSlot, view: match.view });
+  }
+
+  return newSlot;
 }
 
 export function startLocalMatchLoop(matchId: string, socket: any) {
@@ -141,14 +216,12 @@ export function startLocalMatchLoop(matchId: string, socket: any) {
     socket.emit('match:live', { matchId, view: match.view });
 
     // 2. Physics simulation loop at 30 Hz
-    let tickCount = 0;
     const interval = setInterval(() => {
       if (!activeMatches[matchId] || match.phase === 'ended') {
         clearInterval(interval);
         return;
       }
 
-      tickCount++;
       const inputMap: InputMap = {};
 
       if (match.solo) {
@@ -156,7 +229,7 @@ export function startLocalMatchLoop(matchId: string, socket: any) {
         inputMap[0] = { ...latestPlayerInput };
         inputMap[1] = { ...latestPlayerInput };
       } else {
-        inputMap[0] = { ...latestPlayerInput };
+        inputMap[match.playerSlot] = { ...latestPlayerInput };
       }
 
       // Step bots

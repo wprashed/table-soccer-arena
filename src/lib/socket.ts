@@ -6,6 +6,7 @@ import {
   startLocalMatchLoop,
   cleanupLocalMatch,
   setLocalPlayerInput,
+  swapLocalMatchPosition,
 } from './mockMatch';
 import { snapshot } from '../../shared/engine/physics';
 
@@ -24,7 +25,7 @@ export function getSocket(): Socket {
     reconnectionAttempts: Infinity,
     reconnectionDelay: 600,
     reconnectionDelayMax: 4000,
-    autoConnect: !!serverUrl, // don't spam errors on pure static github pages
+    autoConnect: !!serverUrl,
   });
 
   // Intercept emits for local simulation
@@ -36,6 +37,9 @@ export function getSocket(): Socket {
     } else if (event === 'match:leave') {
       const p = args[0];
       cleanupLocalMatch(p?.matchId);
+    } else if (event === 'match:swap_position') {
+      const p = args[0];
+      swapLocalMatchPosition(p?.matchId, socket);
     }
     return originalEmit(event, ...args);
   };
@@ -79,12 +83,17 @@ export function request<T = any>(event: string, payload: any = {}, timeoutMs = 8
         mode: 'practice',
         solo: payload?.solo,
         difficulty: payload?.difficulty,
+        position: payload?.position,
       });
-      return Promise.resolve({ ok: true, matchId: match.id, solo: match.solo } as any);
+      return Promise.resolve({ ok: true, matchId: match.id, solo: match.solo, seat: match.playerSlot } as any);
     }
 
     if (event === 'queue:join') {
-      const match = createLocalMatch({ mode: 'quick', solo: false });
+      const match = createLocalMatch({
+        mode: 'quick',
+        solo: false,
+        position: payload?.position,
+      });
       setTimeout(() => {
         s.emit('queue:matched', { matchId: match.id, view: match.view });
       }, 1200);
@@ -112,13 +121,17 @@ export function request<T = any>(event: string, payload: any = {}, timeoutMs = 8
 
     if (event === 'match:join' || event === 'match:spectate') {
       const matchId = payload?.matchId || 'local_match';
-      const match = createLocalMatch({ mode: 'practice', solo: false });
+      const match = createLocalMatch({
+        mode: 'practice',
+        solo: false,
+        position: payload?.position,
+      });
       match.id = matchId;
       startLocalMatchLoop(matchId, s);
       return Promise.resolve({
         ok: true,
         view: match.view,
-        seat: 0,
+        seat: match.playerSlot,
         solo: match.solo,
         snapshot: snapshot(match.sim),
         chat: [],

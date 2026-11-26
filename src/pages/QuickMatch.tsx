@@ -19,7 +19,19 @@ export function QuickMatch() {
   const [queue, setQueue] = useState<QueueView>({ count: 0, players: [], online: 0 });
   const [elapsed, setElapsed] = useState(0);
   const [searching, setSearching] = useState(false);
+  const [position, setPosition] = useState<'striker' | 'defence' | 'any'>(
+    (user as any)?.position || 'striker'
+  );
   const [matched, setMatched] = useState<{ matchId: string; view: MatchView } | null>(null);
+
+  const changePosition = (next: 'striker' | 'defence' | 'any') => {
+    setPosition(next);
+    request<any>('queue:join', { allowBots: true, position: next })
+      .then((res) => {
+        if (res?.queue) setQueue(res.queue);
+      })
+      .catch(() => {});
+  };
 
   useEffect(() => {
     const socket = getSocket();
@@ -39,7 +51,7 @@ export function QuickMatch() {
     socket.on('queue:matched', onMatched);
     socket.on('match:invited', onInvited);
 
-    request<any>('queue:join', { allowBots: true })
+    request<any>('queue:join', { allowBots: true, position })
       .then((res) => {
         if (res?.ok) {
           setQueue(res.queue);
@@ -127,6 +139,38 @@ export function QuickMatch() {
           <p className="text-xs text-slate-400">{estimate}</p>
           <div className="mt-1 font-mono text-sm text-slate-500">
             {String(Math.floor(elapsed / 60)).padStart(2, '0')}:{String(elapsed % 60).padStart(2, '0')}
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Position Preference</span>
+            <span className="text-[10px] font-bold text-emerald-400 capitalize">
+              {position === 'striker' ? '⚽ Striker (3-bar & 5-bar)' : position === 'defence' ? '🛡️ Defence (Goalie & 2-bar)' : '🎲 Flex'}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { id: 'striker' as const, label: '⚽ Striker', desc: 'Atk & Mid' },
+              { id: 'defence' as const, label: '🛡️ Defence', desc: 'Goalie & Def' },
+              { id: 'any' as const, label: '🎲 Any', desc: 'Flex Role' },
+            ].map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => changePosition(p.id)}
+                className={`rounded-xl py-2 px-2 text-center transition ${
+                  position === p.id
+                    ? 'bg-emerald-500 text-emerald-950 font-black ring-1 ring-emerald-300'
+                    : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                }`}
+              >
+                <div className="text-xs font-black">{p.label}</div>
+                <div className={`text-[9px] ${position === p.id ? 'text-emerald-900 font-bold' : 'text-slate-400'}`}>
+                  {p.desc}
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 

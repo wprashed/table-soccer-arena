@@ -304,6 +304,7 @@ export async function handleMockApi(path: string, method: string, body?: any, to
     if (uIdx >= 0) {
       if (body.avatar) users[uIdx].avatar = body.avatar;
       if (body.country) users[uIdx].country = body.country;
+      if (body.preferredPosition) users[uIdx].position = body.preferredPosition;
       saveUsers(users);
     }
     const profiles = getProfiles();
@@ -311,6 +312,10 @@ export async function handleMockApi(path: string, method: string, body?: any, to
       if (body.avatar) profiles[currentUser.id].user.avatar = body.avatar;
       if (body.country) profiles[currentUser.id].user.country = body.country;
       if (body.bio !== undefined) profiles[currentUser.id].profile.bio = body.bio;
+      if (body.preferredPosition) {
+        profiles[currentUser.id].profile.preferredPosition = body.preferredPosition;
+        profiles[currentUser.id].user.position = body.preferredPosition;
+      }
       saveProfiles(profiles);
     }
     return { ok: true };

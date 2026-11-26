@@ -45,6 +45,7 @@ export interface MatchSession {
   latency: number;
   sendChat: (text: string, emoji?: boolean) => void;
   leave: () => void;
+  swapPosition: () => void;
   /** live numbers for the renderer, refreshed every frame via the provided ref */
   frameRef: React.MutableRefObject<FrameData>;
   inputRef: React.MutableRefObject<{ slide: number; rear: number; front: number }>;
@@ -243,6 +244,12 @@ export function useMatchSession(matchId: string | null, opts: { spectate?: boole
       );
     };
 
+    const onPositionSwapped = (p: any) => {
+      if (p.matchId !== matchId) return;
+      setMySlot(p.newSlot);
+      if (p.view) setView(p.view);
+    };
+
     socket.on('match:state', onState);
     socket.on('match:event', onEvent);
     socket.on('match:end', onEnd);
@@ -251,6 +258,7 @@ export function useMatchSession(matchId: string | null, opts: { spectate?: boole
     socket.on('match:live', onLive);
     socket.on('room:update', onRoomUpdate);
     socket.on('match:connection', onConnection);
+    socket.on('match:position_swapped', onPositionSwapped);
 
     return () => {
       socket.emit('match:leave', { matchId });
@@ -262,6 +270,7 @@ export function useMatchSession(matchId: string | null, opts: { spectate?: boole
       socket.off('match:live', onLive);
       socket.off('room:update', onRoomUpdate);
       socket.off('match:connection', onConnection);
+      socket.off('match:position_swapped', onPositionSwapped);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId, opts.spectate]);
@@ -413,6 +422,13 @@ export function useMatchSession(matchId: string | null, opts: { spectate?: boole
     if (matchId) getSocket().emit('match:leave', { matchId });
   };
 
+  const swapPosition = () => {
+    if (mySlot === null || !matchId) return;
+    const nextSlot = mySlot === 0 ? 1 : mySlot === 1 ? 0 : mySlot;
+    setMySlot(nextSlot);
+    getSocket().emit('match:swap_position', { matchId, newSlot: nextSlot });
+  };
+
   return {
     view,
     ready,
@@ -425,6 +441,7 @@ export function useMatchSession(matchId: string | null, opts: { spectate?: boole
     latency,
     sendChat,
     leave,
+    swapPosition,
     frameRef,
     inputRef,
   };

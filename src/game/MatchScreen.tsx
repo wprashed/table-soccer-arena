@@ -284,6 +284,29 @@ export function MatchScreen({ matchId, onExit }: { matchId: string; onExit: () =
           ?
         </button>
         <div className="flex items-center gap-2 text-[10px] text-slate-400">
+          {mySlot !== null && (
+            <div className="flex items-center gap-1">
+              <span
+                className={`chip text-[10px] font-black uppercase tracking-wider ${
+                  mySlot === 1 || mySlot === 3
+                    ? 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-400/50'
+                    : 'bg-cyan-500/20 text-cyan-300 ring-1 ring-cyan-400/50'
+                }`}
+              >
+                {mySlot === 1 || mySlot === 3 ? '⚽ Striker' : '🛡️ Defence'}
+              </span>
+              {view?.mode === 'practice' && !solo && (
+                <button
+                  type="button"
+                  onClick={() => session.swapPosition()}
+                  className="btn btn-ghost hidden h-6 px-1.5 text-[9px] font-black text-slate-300 hover:text-white sm:inline-flex"
+                  title="Swap role with bot teammate"
+                >
+                  ⇄ Switch
+                </button>
+              )}
+            </div>
+          )}
           <span
             className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 ${
               connected ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/20 text-rose-300'

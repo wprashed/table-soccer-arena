@@ -81,7 +81,7 @@ export function LobbyPanel({
     }
   };
 
-  const seatLabel = (slot: number) => (slot === 0 || slot === 2 ? 'GK / DEF' : 'MID / ATK');
+  const seatLabel = (slot: number) => (slot === 0 || slot === 2 ? '🛡️ Defence (Goalie & 2-bar)' : '⚽ Striker (Midfield & 3-bar)');
 
   return (
     <div className="absolute inset-0 z-20 grid place-items-center bg-black/70 p-3 backdrop-blur-sm">
